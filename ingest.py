@@ -39,8 +39,8 @@ iso_datetime = parser.parse(timestamp).strftime('%Y-%m-%dT%H%M%S')
 
 for camera in cameras:
     image, location, camera_id, image_metadata = itemgetter('image', 'location', 'camera_id', 'image_metadata')(camera)
-    # sample filename format: cam-img/1002_2022-03-21T235548.jpg
-    file_name = 'cam-img/' + camera_id + '_' + iso_datetime + '.jpg'
+    # sample filename format: cam-img/2022-03-21T235548_1002.jpg
+    file_name = 'cam-img/' + iso_datetime + '_' + camera_id + '.jpg'
     print(file_name)
     # get image stream
     img_resp = get_req_handler(image)
