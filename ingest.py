@@ -22,9 +22,9 @@ session = boto3.Session(
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
 )
 
-# initialize S3 client and bucket
-s3 = boto3.resource('s3')
-img_bucket = s3.Bucket(os.getenv("BUCKET_NAME"))
+# initialize S3 ServiceResource and bucket
+s3_resource = boto3.resource('s3')
+img_bucket = s3_resource.Bucket(os.getenv("BUCKET_NAME"))
 
 # GET request to data API
 response = get_req_handler(os.getenv("IMAGE_API_URL"))
@@ -40,7 +40,7 @@ iso_datetime = parser.parse(timestamp).strftime('%Y-%m-%dT%H%M%S')
 for camera in cameras:
     image, location, camera_id, image_metadata = itemgetter('image', 'location', 'camera_id', 'image_metadata')(camera)
     # sample filename format: cam-img/2022-03-21T235548_1002.jpg
-    file_name = 'cam-img/' + iso_datetime + '_' + camera_id + '.jpg'
+    file_name = os.getenv("CAM_IMG_DIR") + iso_datetime + '_' + camera_id + '.jpg'
     print(file_name)
     # get image stream
     img_resp = get_req_handler(image)
