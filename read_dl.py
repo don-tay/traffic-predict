@@ -2,7 +2,7 @@ import boto3
 import os
 
 from botocore.response import StreamingBody
-from datetime import datetime, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
 from mypy_boto3_s3.service_resource import Bucket
 from typing import Dict
@@ -11,7 +11,7 @@ from typing import Dict
 # 1. Image from S3
 # 2. Weather data from RDS (TODO)
 
-today_date = datetime.today().date() - timedelta(days=1)
+today_date = datetime.today().date()
 
 
 # s3_bucket: S3.Bucket
