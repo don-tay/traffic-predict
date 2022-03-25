@@ -1,37 +1,29 @@
 import sys
 import boto3
 import os
-import requests
 
 from dateutil import parser
 from dotenv import load_dotenv
+from helper import get_req_handler, initBoto3Session
 from operator import itemgetter
 
-
-def get_req_handler(url: str) -> requests.Response:
-    response = requests.get(url)
-    if response.status_code != 200:
-        print(
-            "Non-OK status " + str(response.status_code) + " from " + url,
-            file=sys.stderr,
-        )
-    return response
-
-
+############ CONFIG INIT BOILERPLATE ############
+# load env vars
 load_dotenv()
 
-# initialize AWS boto client
-session = boto3.Session(
-    aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-    aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-)
+initBoto3Session()
 
-# initialize S3 ServiceResource and bucket
+# initialize S3 ServiceResource and bucket (init boto3 session first)
 s3_resource = boto3.resource("s3")
 img_bucket = s3_resource.Bucket(os.environ["BUCKET_NAME"])
 
+############ END OF CONFIG INIT BOILERPLATE ############
+
+CAM_IMG_DIR = os.environ["CAM_IMG_DIR"]
+IMAGE_API_URL = os.environ["IMAGE_API_URL"]
+
 # GET request to data API
-response = get_req_handler(os.environ["IMAGE_API_URL"])
+response = get_req_handler(IMAGE_API_URL)
 
 res_json = response.json()
 if res_json["api_info"]["status"] != "healthy":
@@ -46,12 +38,12 @@ for camera in cameras:
         "image", "location", "camera_id", "image_metadata"
     )(camera)
     # sample filename format: cam-img/2022-03-21T235548_1002.jpg
-    file_name = os.environ["CAM_IMG_DIR"] + iso_datetime + "_" + camera_id + ".jpg"
-    print(file_name)
+    file_name = CAM_IMG_DIR + iso_datetime + "_" + camera_id + ".jpg"
     # get image stream
     img_resp = get_req_handler(image)
     try:
         # upload image to S3
         img_bucket.put_object(Body=img_resp.content, Key=file_name)
+        print("Successfully uploaded image " + file_name + " to S3")
     except Exception:
-        print("Failed to upload image " + file_name)
+        print("Failed to upload image " + file_name, file=sys.stderr)
