@@ -1,4 +1,3 @@
-from types import NoneType
 import boto3
 import os
 import requests
