@@ -54,6 +54,7 @@ def ingest_job():
 
 
 schedule.every(5).minutes.do(ingest_job)
+print("Init scheduler to run ingest job every 5 min")
 
 while True:
     schedule.run_pending()
