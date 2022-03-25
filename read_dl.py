@@ -34,4 +34,4 @@ for filename, stream_data in res.items():
     with open(filename, "wb") as f:
         f.write(stream_data.read())
 
-print("successfully retrieved all images for " + str(today_date))
+print("Successfully retrieved all images for " + str(today_date))

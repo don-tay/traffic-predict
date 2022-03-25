@@ -1,6 +1,8 @@
 import sys
+import time
 import boto3
 import os
+import schedule
 
 from dateutil import parser
 from dotenv import load_dotenv
@@ -22,28 +24,37 @@ img_bucket = s3_resource.Bucket(os.environ["BUCKET_NAME"])
 CAM_IMG_DIR = os.environ["CAM_IMG_DIR"]
 IMAGE_API_URL = os.environ["IMAGE_API_URL"]
 
-# GET request to data API
-response = get_req_handler(IMAGE_API_URL)
 
-res_json = response.json()
-if res_json["api_info"]["status"] != "healthy":
-    print("Image API unhealthy", file=sys.stderr)
+def ingest_job():
+    # GET request to data API
+    response = get_req_handler(IMAGE_API_URL)
 
-item = res_json["items"][0]
-timestamp, cameras = itemgetter("timestamp", "cameras")(item)
-iso_datetime = parser.parse(timestamp).strftime("%Y-%m-%dT%H%M%S")
+    res_json = response.json()
+    if res_json["api_info"]["status"] != "healthy":
+        print("Image API unhealthy", file=sys.stderr)
 
-for camera in cameras:
-    image, location, camera_id, image_metadata = itemgetter(
-        "image", "location", "camera_id", "image_metadata"
-    )(camera)
-    # sample filename format: cam-img/2022-03-21T235548_1002.jpg
-    file_name = CAM_IMG_DIR + iso_datetime + "_" + camera_id + ".jpg"
-    # get image stream
-    img_resp = get_req_handler(image)
-    try:
-        # upload image to S3
-        img_bucket.put_object(Body=img_resp.content, Key=file_name)
-        print("Successfully uploaded image " + file_name + " to S3")
-    except Exception:
-        print("Failed to upload image " + file_name, file=sys.stderr)
+    item = res_json["items"][0]
+    timestamp, cameras = itemgetter("timestamp", "cameras")(item)
+    iso_datetime = parser.parse(timestamp).strftime("%Y-%m-%dT%H%M%S")
+
+    for camera in cameras:
+        image, location, camera_id, image_metadata = itemgetter(
+            "image", "location", "camera_id", "image_metadata"
+        )(camera)
+        # sample filename format: cam-img/2022-03-21T235548_1002.jpg
+        file_name = CAM_IMG_DIR + iso_datetime + "_" + camera_id + ".jpg"
+        # get image stream
+        img_resp = get_req_handler(image)
+        try:
+            # upload image to S3
+            img_bucket.put_object(Body=img_resp.content, Key=file_name)
+        except Exception:
+            print("Failed to upload image " + file_name, file=sys.stderr)
+    print("Completed image upload to S3 at " + str(timestamp))
+
+
+schedule.every(5).minutes.do(ingest_job)
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
