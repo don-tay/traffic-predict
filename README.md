@@ -7,15 +7,17 @@ In this project, we aim to address the problem of road traffic congestion, with 
 ### Dependencies Required
 
 - Python 3.8 or later
+- [Python3 venv](https://docs.python.org/3/library/venv.html) 
 
 ### First-time Setup
 
 1. Duplicate `.env.example` file and rename it `.env`
 2. In the `.env` file, fill in the values for the keys listed
+3. Initialize virtual environment: `python3 -m venv .venv`
 
 ## Run Script
 
-1. Download depenndencies
+1. Download dependencies
 
 ```bash
 pip install -r requirements.txt
