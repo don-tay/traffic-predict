@@ -13,6 +13,8 @@ from typing import Dict
 # search_key: prefix key to search
 # returns dictionary stucture: { filename: StreamingBody }
 # NB: use method read() on StreamingBody to convert to bytes
+
+
 def get_s3_objs(s3_bucket: Bucket, search_key: str) -> Dict[str, StreamingBody]:
     obj_summaries = s3_bucket.objects.filter(Prefix=search_key)
 
@@ -22,8 +24,8 @@ def get_s3_objs(s3_bucket: Bucket, search_key: str) -> Dict[str, StreamingBody]:
 
 # url: URL string to perform GET request
 # returns request Response
-def get_req_handler(url: str) -> requests.Response:
-    response = requests.get(url)
+def get_req_handler(url: str, params: dict) -> requests.Response:
+    response = requests.get(url, params=params)
     if response.status_code != 200:
         print(
             "Non-OK status " + str(response.status_code) + " from " + url,
