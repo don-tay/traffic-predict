@@ -1,3 +1,4 @@
 {
-  "editor.defaultFormatter": "ms-python.vscode-pylance"
+  "editor.defaultFormatter": "ms-python.python",
+  "editor.formatOnSave": true
 }
