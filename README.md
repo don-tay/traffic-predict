@@ -17,7 +17,7 @@ In this project, we aim to address the problem of road traffic congestion, with 
 
 ## Run Script
 
-1. Download depenndencies
+1. Download dependencies
 
 ```bash
 pip install -r requirements.txt
