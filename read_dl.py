@@ -1,30 +1,30 @@
 import boto3
 import os
 
-from datetime import datetime
+from botocore.response import StreamingBody
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from mypy_boto3_s3.service_resource import Bucket
-from typing import BinaryIO, Dict
+from typing import Dict
 
 # Helper functions to get data from the various data lakes:
 # 1. Image from S3
 # 2. Weather data from RDS (TODO)
 
-today_date = datetime.today().date()
+today_date = datetime.today().date() - timedelta(days=1)
 
 
 # s3_bucket: S3.Bucket
 # search_key: prefix key to search
 # returns dictionary stucture: { filename: StreamingBody }
 # NB: use method read() on StreamingBody to convert to bytes
-def get_s3_images(s3_bucket: Bucket, search_key: str) -> Dict[str, BinaryIO]:
+def get_s3_images(s3_bucket: Bucket, search_key: str) -> Dict[str, StreamingBody]:
     obj_summaries = s3_bucket.objects.filter(
         Prefix=search_key
     )
-    res = {}
-    for summary in obj_summaries:
-        obj = summary.get()
-        res[summary.key] = obj['Body']
+
+    res = dict([(summary.key, summary.get()['Body'])
+               for summary in obj_summaries])
     return res
 
 
