@@ -1,3 +1,6 @@
 {
-  "editor.defaultFormatter": "ms-python.vscode-pylance"
+  "editor.defaultFormatter": "ms-python.python",
+  "editor.formatOnSave": true,
+  "python.formatting.provider": "black",
+  "python.linting.enabled": false
 }
