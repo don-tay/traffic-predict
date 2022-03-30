@@ -74,10 +74,9 @@ def output_csv(
                 csv_buffer = StringIO()
                 dataframe.to_csv(csv_buffer, encoding="utf-8")
                 s3_bucket.put_object(Body=csv_buffer.getvalue(), Key=savepath)
+                print("Uploaded dataframe as csv file " + savepath + " to bucket!")
             except Exception:
                 print("Failed to upload data in " + savepath, file=sys.stderr)
-            else:
-                print("Uploaded dataframe as csv file " + savepath + " to bucket!")
         else:
             print("When using output='AWS', specify S3.Bucket object in s3_bucket.")
 
