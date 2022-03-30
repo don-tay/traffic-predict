@@ -40,7 +40,6 @@ for cam in resp_content['items'][0]['cameras']:
 
         with open(img_file_path, 'xb') as handler:
             handler.write(img_data)
-        handler.close()
         print("Saved image at:" + img_file_path)
         saved_count += 1
     else:
