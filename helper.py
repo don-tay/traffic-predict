@@ -68,18 +68,16 @@ def output_csv(
             os.makedirs(directory)
         dataframe.to_csv(savepath, encoding="utf-8")
     elif output_loc == "AWS":
-        if s3_bucket:
-            try:
-                # upload dataframe to S3 bucket
-                csv_buffer = StringIO()
-                dataframe.to_csv(csv_buffer, encoding="utf-8")
-                s3_bucket.put_object(Body=csv_buffer.getvalue(), Key=savepath)
-            except Exception:
-                print("Failed to upload data in " + savepath, file=sys.stderr)
-            else:
-                print("Uploaded dataframe as csv file " + savepath + " to bucket!")
-        else:
+        if not s3_bucket:
             print("When using output='AWS', specify S3.Bucket object in s3_bucket.")
+            return
+        try:
+            # upload dataframe to S3 bucket
+            csv_buffer = StringIO()
+            dataframe.to_csv(csv_buffer, encoding="utf-8")
+            s3_bucket.put_object(Body=csv_buffer.getvalue(), Key=savepath)
+        except Exception:
+            print("Failed to upload data in " + savepath, file=sys.stderr)
 
 
 # merge CSV files stored in Bucket (produced for each timestamp, and previously merged files) into a single one
