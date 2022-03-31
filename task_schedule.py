@@ -6,7 +6,7 @@ from image_ingest import ingest_image
 # synced ingestion of camera image and weather data
 # TODO: refactor output_loc to env vars
 def ingest_all(output_loc="AWS"):
-    call_timestamp = datetime.datetime.now()
+    call_timestamp = getCurrentDateTime()
     print(
         "Calling all weather data endpoints with date_time parameter:", call_timestamp
     )

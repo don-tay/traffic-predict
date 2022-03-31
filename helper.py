@@ -1,5 +1,6 @@
 import boto3
 import os
+import pytz
 import requests
 import sys
 
@@ -149,3 +150,9 @@ def merge_bucket_csvs(
         s3_bucket.delete_objects(Delete={"Objects": [{"Key": filename}], "Quiet": True})
         if verbose:
             print("file:", filename)
+
+
+# Get localized current datetime
+def getCurrentDateTime():
+    tz = pytz.timezone("Asia/Singapore")
+    return tz.localize(datetime.datetime.now())

@@ -4,7 +4,12 @@ import boto3
 import os
 
 from dotenv import load_dotenv
-from helper import formatted_timestamp, get_req_handler, initBoto3Session
+from helper import (
+    formatted_timestamp,
+    get_req_handler,
+    getCurrentDateTime,
+    initBoto3Session,
+)
 from operator import itemgetter
 
 ############ CONFIG INIT BOILERPLATE ############
@@ -23,7 +28,7 @@ CAM_IMG_DIR = os.environ["CAM_IMG_DIR"]
 IMAGE_API_URL = os.environ["IMAGE_API_URL"]
 
 
-def ingest_image(call_timestamp=datetime.datetime.now()):
+def ingest_image(call_timestamp=getCurrentDateTime()):
     # GET request to data API
     response = get_req_handler(IMAGE_API_URL)
 
