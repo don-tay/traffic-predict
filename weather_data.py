@@ -42,7 +42,7 @@ def real_time_weather(output_loc="local", call_timestamp=None):
     if not call_timestamp:
         call_timestamp = datetime.datetime.now()
     call_timestamp_str = formatted_timestamp(call_timestamp)
-    params = {"datetime": call_timestamp}
+    params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 
     R_df = pd.DataFrame()
     NR_df = pd.DataFrame()
@@ -142,7 +142,7 @@ def forecast_weather_2HR(output_loc="local", call_timestamp=None):
     if not call_timestamp:
         call_timestamp = datetime.datetime.now()
     call_timestamp_str = formatted_timestamp(call_timestamp)
-    params = {"datetime": call_timestamp}
+    params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 
     forecast_field = "2hr_forecast_"
     endpoint_url = "2-hour-weather-forecast"
@@ -202,7 +202,7 @@ def forecast_weather_24HR(output_loc="local", call_timestamp=None):
     if not call_timestamp:
         call_timestamp = datetime.datetime.now()
     call_timestamp_str = formatted_timestamp(call_timestamp)
-    params = {"datetime": call_timestamp}
+    params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 
     endpoint_url = "24-hour-weather-forecast"
 
@@ -265,7 +265,7 @@ def forecast_weather_4DAY(output_loc="local", call_timestamp=None):
     if not call_timestamp:
         call_timestamp = datetime.datetime.now()
     call_timestamp_str = formatted_timestamp(call_timestamp)
-    params = {"datetime": call_timestamp}
+    params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 
     endpoint_url = "4-day-weather-forecast"
 
