@@ -30,7 +30,7 @@ WEATHER_DATA_DIR = os.environ["WEATHER_DATA_DIR"]
 WEATHER_API_URL = os.environ["WEATHER_API_URL"]
 
 
-def real_time_weather(output_loc="local", call_timestamp=None):
+def real_time_weather(output_loc="local", call_timestamp=datetime.datetime.now()):
     api_endpoints = {
         "air_temp": "air-temperature",  # 5 stations
         "rainfall": "rainfall",  # 68 stations
@@ -38,9 +38,6 @@ def real_time_weather(output_loc="local", call_timestamp=None):
         "wind_dir": "wind-direction",  # 5 stations
         "wind_speed": "wind-speed",  # 5 stations
     }
-    # call_timestamp parameter provided to sync up with calls to other weather APIs
-    if not call_timestamp:
-        call_timestamp = datetime.datetime.now()
     call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 
@@ -137,10 +134,7 @@ def real_time_weather(output_loc="local", call_timestamp=None):
         )
 
 
-def forecast_weather_2HR(output_loc="local", call_timestamp=None):
-    # call_timestamp parameter provided to sync up with calls to other weather APIs
-    if not call_timestamp:
-        call_timestamp = datetime.datetime.now()
+def forecast_weather_2HR(output_loc="local", call_timestamp=datetime.datetime.now()):
     call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 
@@ -197,10 +191,7 @@ def forecast_weather_2HR(output_loc="local", call_timestamp=None):
         )
 
 
-def forecast_weather_24HR(output_loc="local", call_timestamp=None):
-    # call_timestamp parameter provided to sync up with calls to other weather APIs
-    if not call_timestamp:
-        call_timestamp = datetime.datetime.now()
+def forecast_weather_24HR(output_loc="local", call_timestamp=datetime.datetime.now()):
     call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 
@@ -260,10 +251,7 @@ def forecast_weather_24HR(output_loc="local", call_timestamp=None):
         )
 
 
-def forecast_weather_4DAY(output_loc="local", call_timestamp=None):
-    # call_timestamp parameter provided to sync up with calls to other weather APIs
-    if not call_timestamp:
-        call_timestamp = datetime.datetime.now()
+def forecast_weather_4DAY(output_loc="local", call_timestamp=datetime.datetime.now()):
     call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 

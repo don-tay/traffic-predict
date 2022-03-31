@@ -8,7 +8,7 @@ from mypy_boto3_s3.service_resource import Bucket
 from typing import Dict
 import pandas as pd
 import datetime
-import dateutil
+from dateutil import parser
 from io import StringIO, BytesIO
 
 # Commonly used helper functions
@@ -36,7 +36,7 @@ def get_s3_objs(s3_bucket: Bucket, search_key: str) -> Dict[str, StreamingBody]:
 
 # url: URL string to perform GET request
 # returns request Response
-def get_req_handler(url: str, params: dict) -> requests.Response:
+def get_req_handler(url: str, params: dict = {}) -> requests.Response:
     response = requests.get(url, params=params)
     if response.status_code != 200:
         print(
@@ -46,12 +46,13 @@ def get_req_handler(url: str, params: dict) -> requests.Response:
     return response
 
 
-# returns string form of datetime timestamp (from API calls)
-def formatted_timestamp(timestamp):
+# returns string of datetime timestamp
+# eg. 2022-03-21T235548
+def formatted_timestamp(timestamp: str | datetime.datetime) -> str:
     format = "%Y-%m-%dT%H%M%S"
     if isinstance(timestamp, str):
         # timestamp provided from API calls is a string that needs to be converted
-        return dateutil.parser.parse(timestamp).strftime(format)
+        return parser.parse(timestamp).strftime(format)
     elif isinstance(timestamp, datetime.datetime):
         # if timestamp is a datetime object (produced by code), directly use strftime function on it
         return timestamp.strftime(format)
@@ -67,7 +68,7 @@ def output_csv(
     directory: str,
     filename: str,
     output_loc: str = "local",
-    s3_bucket: Bucket = None,
+    s3_bucket: Bucket | None = None,
 ):
     savepath = directory + filename
     if output_loc == "local":
@@ -76,13 +77,16 @@ def output_csv(
         dataframe.to_csv(savepath, encoding="utf-8")
     elif output_loc == "AWS":
         if not s3_bucket:
-            print("When using output='AWS', specify S3.Bucket object in s3_bucket.")
+            print(
+                "When using output='AWS', specify S3.Bucket object in s3_bucket.",
+                file=sys.stderr,
+            )
             return
         try:
             # upload dataframe to S3 bucket
             csv_buffer = StringIO()
             dataframe.to_csv(csv_buffer, encoding="utf-8")
-            s3_bucket.put_object(Body=csv_buffer.getvalue(), Key=savepath)
+            s3_bucket.put_object(Body=csv_buffer.getvalue(), Key=savepath)  # type: ignore
         except Exception:
             print("Failed to upload data in " + savepath, file=sys.stderr)
 

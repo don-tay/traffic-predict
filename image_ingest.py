@@ -1,12 +1,10 @@
 import sys
-import time
+import datetime
 import boto3
 import os
-import schedule
 
-from dateutil import parser
 from dotenv import load_dotenv
-from helper import get_req_handler, initBoto3Session
+from helper import formatted_timestamp, get_req_handler, initBoto3Session
 from operator import itemgetter
 
 ############ CONFIG INIT BOILERPLATE ############
@@ -25,7 +23,7 @@ CAM_IMG_DIR = os.environ["CAM_IMG_DIR"]
 IMAGE_API_URL = os.environ["IMAGE_API_URL"]
 
 
-def ingest_job():
+def ingest_image(call_timestamp=datetime.datetime.now()):
     # GET request to data API
     response = get_req_handler(IMAGE_API_URL)
 
@@ -35,7 +33,7 @@ def ingest_job():
 
     item = res_json["items"][0]
     timestamp, cameras = itemgetter("timestamp", "cameras")(item)
-    iso_datetime = parser.parse(timestamp).strftime("%Y-%m-%dT%H%M%S")
+    iso_datetime = formatted_timestamp(call_timestamp)
 
     for camera in cameras:
         image, location, camera_id, image_metadata = itemgetter(
@@ -50,12 +48,4 @@ def ingest_job():
             img_bucket.put_object(Body=img_resp.content, Key=file_name)
         except Exception:
             print("Failed to upload image " + file_name, file=sys.stderr)
-    print("Completed image upload to S3 at " + str(timestamp))
-
-
-schedule.every(5).minutes.do(ingest_job)
-print("Init scheduler to run ingest job every 5 min")
-
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+    print("Completed image upload to S3 at " + str(call_timestamp))
