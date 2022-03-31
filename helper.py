@@ -5,7 +5,7 @@ import sys
 
 from botocore.response import StreamingBody
 from mypy_boto3_s3.service_resource import Bucket
-from typing import Dict
+from typing import Dict, Union
 import pandas as pd
 import datetime
 from dateutil import parser
@@ -48,7 +48,7 @@ def get_req_handler(url: str, params: dict = {}) -> requests.Response:
 
 # returns string of datetime timestamp
 # eg. 2022-03-21T235548
-def formatted_timestamp(timestamp: str | datetime.datetime) -> str:
+def formatted_timestamp(timestamp: Union[str, datetime.datetime]) -> str:
     format = "%Y-%m-%dT%H%M%S"
     if isinstance(timestamp, str):
         # timestamp provided from API calls is a string that needs to be converted
@@ -68,7 +68,7 @@ def output_csv(
     directory: str,
     filename: str,
     output_loc: str = "local",
-    s3_bucket: Bucket | None = None,
+    s3_bucket: Union[Bucket, None] = None,
 ):
     savepath = directory + filename
     if output_loc == "local":
