@@ -7,6 +7,7 @@ import datetime
 import boto3
 from dotenv import load_dotenv
 from helper import (
+    getCurrentDateTime,
     initBoto3Session,
     get_req_handler,
     formatted_timestamp,
@@ -30,7 +31,7 @@ WEATHER_DATA_DIR = os.environ["WEATHER_DATA_DIR"]
 WEATHER_API_URL = os.environ["WEATHER_API_URL"]
 
 
-def real_time_weather(output_loc="local", call_timestamp=datetime.datetime.now()):
+def real_time_weather(output_loc="local", call_timestamp=getCurrentDateTime()):
     api_endpoints = {
         "air_temp": "air-temperature",  # 5 stations
         "rainfall": "rainfall",  # 68 stations
@@ -134,7 +135,7 @@ def real_time_weather(output_loc="local", call_timestamp=datetime.datetime.now()
         )
 
 
-def forecast_weather_2HR(output_loc="local", call_timestamp=datetime.datetime.now()):
+def forecast_weather_2HR(output_loc="local", call_timestamp=getCurrentDateTime()):
     call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 
@@ -191,7 +192,7 @@ def forecast_weather_2HR(output_loc="local", call_timestamp=datetime.datetime.no
         )
 
 
-def forecast_weather_24HR(output_loc="local", call_timestamp=datetime.datetime.now()):
+def forecast_weather_24HR(output_loc="local", call_timestamp=getCurrentDateTime()):
     call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 
@@ -251,7 +252,7 @@ def forecast_weather_24HR(output_loc="local", call_timestamp=datetime.datetime.n
         )
 
 
-def forecast_weather_4DAY(output_loc="local", call_timestamp=datetime.datetime.now()):
+def forecast_weather_4DAY(output_loc="local", call_timestamp=getCurrentDateTime()):
     call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"date_time": call_timestamp.strftime("%Y-%m-%dT%H:%M:%S")}
 
