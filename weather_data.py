@@ -30,7 +30,7 @@ WEATHER_DATA_DIR = os.environ["WEATHER_DATA_DIR"]
 WEATHER_API_URL = os.environ["WEATHER_API_URL"]
 
 
-def real_time_weather(output_loc="local"):
+def real_time_weather(output_loc="local", call_timestamp=None):
     api_endpoints = {
         "air_temp": "air-temperature",  # 5 stations
         "rainfall": "rainfall",  # 68 stations
@@ -38,8 +38,10 @@ def real_time_weather(output_loc="local"):
         "wind_dir": "wind-direction",  # 5 stations
         "wind_speed": "wind-speed",  # 5 stations
     }
-
-    call_timestamp = datetime.datetime.now()
+    # call_timestamp parameter provided to sync up with calls to other weather APIs
+    if not call_timestamp:
+        call_timestamp = datetime.datetime.now()
+    call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"datetime": call_timestamp}
 
     R_df = pd.DataFrame()
@@ -49,7 +51,6 @@ def real_time_weather(output_loc="local"):
         resp = get_req_handler(target_url, params)
 
         resp_content = json.loads(resp.content.decode("utf-8"))
-
         readings = resp_content["items"][0]["readings"]
         reading_dict = {weather_field + "_realtime": [], "station_id": []}
         for r in readings:
@@ -110,18 +111,12 @@ def real_time_weather(output_loc="local"):
     R_df = R_df.reindex(columns=R_col_order)
     NR_df = NR_df.reindex(columns=NR_col_order)
 
-    # rainfall dataframe saved to csv: rainfall-realtime+<timestamp>.csv
-    R_filename = (
-        "rainfall-realtime_"
-        + pd.to_datetime(R_df["timestamp"]).min().strftime("%Y-%m-%dT%H%M%S")
-        + ".csv"
-    )
-    # non-rainfall dataframe saved to csv: non-rainfall-realtime+<timestamp>.csv
-    NR_filename = (
-        "non-rainfall-realtime_"
-        + pd.to_datetime(NR_df["timestamp"]).min().strftime("%Y-%m-%dT%H%M%S")
-        + ".csv"
-    )
+    R_df["call_timestamp"] = call_timestamp_str
+    NR_df["call_timestamp"] = call_timestamp_str
+    # rainfall dataframe saved to csv: rainfall-realtime+<call_timestamp>.csv
+    R_filename = "rainfall-realtime_" + call_timestamp_str + ".csv"
+    # non-rainfall dataframe saved to csv: non-rainfall-realtime+<call_timestamp>.csv
+    NR_filename = "non-rainfall-realtime_" + call_timestamp_str + ".csv"
 
     if output_loc == "return":
         return R_df, NR_df
@@ -142,9 +137,11 @@ def real_time_weather(output_loc="local"):
         )
 
 
-def forecast_weather_2HR(output_loc="local"):
-    # collect 2-hour-forecast data:
-    call_timestamp = datetime.datetime.now()
+def forecast_weather_2HR(output_loc="local", call_timestamp=None):
+    # call_timestamp parameter provided to sync up with calls to other weather APIs
+    if not call_timestamp:
+        call_timestamp = datetime.datetime.now()
+    call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"datetime": call_timestamp}
 
     forecast_field = "2hr_forecast_"
@@ -183,8 +180,9 @@ def forecast_weather_2HR(output_loc="local"):
     forecast_2HR_frame["2hr_start"] = valid_start
     forecast_2HR_frame["2hr_end"] = valid_end
 
-    # filename based on start of valid period for the forecast (example: 143000 -> 163000)
-    forecast_2HR_filename = "forecast-2HR_" + valid_start + ".csv"
+    forecast_2HR_frame["call_timestamp"] = call_timestamp_str
+    # filename based on call_timestamp
+    forecast_2HR_filename = "forecast-2HR_" + call_timestamp_str + ".csv"
 
     # output frames
     if output_loc == "return":
@@ -199,8 +197,11 @@ def forecast_weather_2HR(output_loc="local"):
         )
 
 
-def forecast_weather_24HR(output_loc="local"):
-    call_timestamp = datetime.datetime.now()
+def forecast_weather_24HR(output_loc="local", call_timestamp=None):
+    # call_timestamp parameter provided to sync up with calls to other weather APIs
+    if not call_timestamp:
+        call_timestamp = datetime.datetime.now()
+    call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"datetime": call_timestamp}
 
     endpoint_url = "24-hour-weather-forecast"
@@ -244,10 +245,8 @@ def forecast_weather_24HR(output_loc="local"):
     forecast_24HR_frame = pd.concat(
         [general_timing_frame, general_forecast_frame, period_forecast_frame], axis=1
     )
-
-    forecast_24HR_filename = (
-        "forecast-24HR_" + forecast_24HR_frame["24hr_start"][0] + ".csv"
-    )
+    forecast_24HR_frame["call_timestamp"] = call_timestamp_str
+    forecast_24HR_filename = "forecast-24HR_" + call_timestamp_str + ".csv"
 
     if output_loc == "return":
         return forecast_24HR_frame
@@ -261,8 +260,11 @@ def forecast_weather_24HR(output_loc="local"):
         )
 
 
-def forecast_weather_4DAY(output_loc="local"):
-    call_timestamp = datetime.datetime.now()
+def forecast_weather_4DAY(output_loc="local", call_timestamp=None):
+    # call_timestamp parameter provided to sync up with calls to other weather APIs
+    if not call_timestamp:
+        call_timestamp = datetime.datetime.now()
+    call_timestamp_str = formatted_timestamp(call_timestamp)
     params = {"datetime": call_timestamp}
 
     endpoint_url = "4-day-weather-forecast"
@@ -288,11 +290,12 @@ def forecast_weather_4DAY(output_loc="local"):
     forecast_4DAY_frame = day_forecast_frame.rename(
         columns={c: "4day_" + c for c in day_forecast_frame.columns}
     )
-
-    # name based on first date of the 4 dates in forecast
-    forecast_4DAY_filename = (
-        "forecast-4DAY_" + str(forecast_4DAY_frame["4day_date"].iloc[0]) + ".csv"
+    forecast_4DAY_frame["4day_date"] = forecast_4DAY_frame["4day_date"].apply(
+        formatted_timestamp
     )
+    forecast_4DAY_frame["call_timestamp"] = call_timestamp_str
+    # name based on call_timestamp
+    forecast_4DAY_filename = "forecast-4DAY_" + call_timestamp_str + ".csv"
     if output_loc == "return":
         return forecast_4DAY_frame
     else:
@@ -305,7 +308,7 @@ def forecast_weather_4DAY(output_loc="local"):
         )
 
 
-def merge_weather_csvs():
+def merge_weather_csvs(drop_duplicates=False):
 
     table_name_key_cols = {
         "forecast-2HR": ["2hr_forecast_area", "2hr_start"],
@@ -314,21 +317,23 @@ def merge_weather_csvs():
         "rainfall-realtime": ["timestamp", "station_id"],
         "non-rainfall-realtime": ["timestamp", "station_id"],
     }
-
-    for (table_name, key_cols) in table_name_key_cols.items():
+    for table_name in table_name_key_cols.keys():
         print(f"Merging {table_name}...")
+        if drop_duplicates:
+            key_cols = table_name_key_cols[table_name]
+        else:
+            key_cols = None
         merge_bucket_csvs(
             data_bucket,
             WEATHER_DATA_DIR,
             table_name,
             key_cols,
         )
-        print("---------------------------------------------------")
 
 
 # one-time calls, uncomment and run as needed
 
-# real_time_weather(output_loc="AWS")
+# real_time_weather(output_loc="local")
 # forecast_weather_2HR(output_loc="AWS")
 # forecast_weather_24HR(output_loc="AWS")
 # forecast_weather_4DAY(output_loc="AWS")

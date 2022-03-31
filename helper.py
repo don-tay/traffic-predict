@@ -7,6 +7,7 @@ from botocore.response import StreamingBody
 from mypy_boto3_s3.service_resource import Bucket
 from typing import Dict
 import pandas as pd
+import datetime
 import dateutil
 from io import StringIO, BytesIO
 
@@ -47,7 +48,13 @@ def get_req_handler(url: str, params: dict) -> requests.Response:
 
 # returns string form of datetime timestamp (from API calls)
 def formatted_timestamp(timestamp):
-    return dateutil.parser.parse(timestamp).strftime("%Y-%m-%dT%H%M%S")
+    format = "%Y-%m-%dT%H%M%S"
+    if isinstance(timestamp, str):
+        # timestamp provided from API calls is a string that needs to be converted
+        return dateutil.parser.parse(timestamp).strftime(format)
+    elif isinstance(timestamp, datetime.datetime):
+        # if timestamp is a datetime object (produced by code), directly use strftime function on it
+        return timestamp.strftime(format)
 
 
 # dataframe: pandas dataframe to save as CSV (locally or in AWS bucket)
@@ -86,26 +93,35 @@ def output_csv(
 # file_prefix: prefix of filename for the csv files to merge
 # key_cols: key columns in the CSV files used to identify and remove duplicate rows after merging
 # archive_timestamp_files: whether to archive the individual timestamped files in a separate sub-folder
+# verbose: whether or not to print status messages to stdout
 
 
 def merge_bucket_csvs(
-    s3_bucket, bucket_dir, file_prefix, key_cols, archive_timestamp_files=True
+    s3_bucket,
+    bucket_dir,
+    file_prefix,
+    key_cols=None,
+    archive_timestamp_files=True,
+    verbose=False,
 ):
     search_key = bucket_dir + file_prefix
     res = get_s3_objs(s3_bucket, search_key)
     merged_df = pd.DataFrame()
     for filename, stream_data in res.items():
-        print("Found file:", filename, end=", ")
         tmp_df = pd.read_csv(BytesIO(stream_data.read()), index_col=0)
         if merged_df.empty:
             merged_df = tmp_df.copy()
         else:
             merged_df = pd.concat([merged_df, tmp_df], ignore_index=True)
-        print("merged file contents")
+        if verbose:
+            print("Found file:", filename, "merged file contents")
+
+    # if key_cols is specified, drop duplicate rows based on them
     # merged dataframe may have duplicates rows (which have same values on the key_cols), these are dropped here
-    merged_df = merged_df.drop_duplicates(
-        subset=key_cols, keep="last", ignore_index=True
-    )
+    if key_cols:
+        merged_df = merged_df.drop_duplicates(
+            subset=key_cols, keep="last", ignore_index=True
+        )
 
     output_csv(
         merged_df,
@@ -118,16 +134,14 @@ def merge_bucket_csvs(
     TS_search_key = search_key + "_"
     TS_res = get_s3_objs(s3_bucket, TS_search_key)
 
-    print("Managing timestamped files ...")
+    if verbose:
+        print("Managing timestamped files ...")
     for filename, stream_data in TS_res.items():
-        print("Timestamped file:", filename, end=", ")
         if archive_timestamp_files:
-
             s3_bucket.copy(
                 CopySource={"Bucket": s3_bucket.name, "Key": filename},
                 Key=bucket_dir + "timestamped_files/" + filename.split("/")[1],
             )
-            print("archived into subfolder", end=", ")
-
         s3_bucket.delete_objects(Delete={"Objects": [{"Key": filename}], "Quiet": True})
-        print("deleted original file")
+        if verbose:
+            print("file:", filename)
