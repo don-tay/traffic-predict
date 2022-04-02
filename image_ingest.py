@@ -60,7 +60,6 @@ def ingest_image(call_timestamp=getCurrentDateTime()):
         zip_filename = iso_datetime + ".zip"
         # upload image to S3
         with open(zip_filename, "rb") as f:
-            print(zip_filename)
             img_bucket.upload_fileobj(Fileobj=f, Key=CAM_IMG_DIR + zip_filename)
         print("Completed image upload to S3 at " + str(call_timestamp))
         os.remove(zip_filename)
