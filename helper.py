@@ -118,6 +118,13 @@ def merge_bucket_csvs(
             merged_df = tmp_df.copy()
         else:
             merged_df = pd.concat([merged_df, tmp_df], ignore_index=True)
+        # delete/archive the csv programmatically after the merge
+        if archive_timestamp_files:
+            s3_bucket.copy(
+                CopySource={"Bucket": s3_bucket.name, "Key": filename},
+                Key=bucket_dir + "timestamped_files/" + filename.split("/")[1],
+            )
+        s3_bucket.delete_objects(Delete={"Objects": [{"Key": filename}], "Quiet": True})
         if verbose:
             print("Found file:", filename, "merged file contents")
 
@@ -135,21 +142,6 @@ def merge_bucket_csvs(
         output_loc="AWS",
         s3_bucket=s3_bucket,
     )
-    # delete/archive the timestamped csvs programmatically after the merge
-    TS_search_key = search_key + "_"
-    TS_res = get_s3_objs(s3_bucket, TS_search_key)
-
-    if verbose:
-        print("Managing timestamped files ...")
-    for filename, stream_data in TS_res.items():
-        if archive_timestamp_files:
-            s3_bucket.copy(
-                CopySource={"Bucket": s3_bucket.name, "Key": filename},
-                Key=bucket_dir + "timestamped_files/" + filename.split("/")[1],
-            )
-        s3_bucket.delete_objects(Delete={"Objects": [{"Key": filename}], "Quiet": True})
-        if verbose:
-            print("file:", filename)
 
 
 # Get localized current datetime
