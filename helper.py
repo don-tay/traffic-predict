@@ -119,12 +119,15 @@ def merge_bucket_csvs(
         else:
             merged_df = pd.concat([merged_df, tmp_df], ignore_index=True)
         # delete/archive the csv programmatically after the merge
-        if archive_timestamp_files:
-            s3_bucket.copy(
-                CopySource={"Bucket": s3_bucket.name, "Key": filename},
-                Key=bucket_dir + "timestamped_files/" + filename.split("/")[1],
+        if filename.startswith(search_key + "_"):
+            if archive_timestamp_files:
+                s3_bucket.copy(
+                    CopySource={"Bucket": s3_bucket.name, "Key": filename},
+                    Key=bucket_dir + "timestamped_files/" + filename.split("/")[1],
+                )
+            s3_bucket.delete_objects(
+                Delete={"Objects": [{"Key": filename}], "Quiet": True}
             )
-        s3_bucket.delete_objects(Delete={"Objects": [{"Key": filename}], "Quiet": True})
         if verbose:
             print("Found file:", filename, "merged file contents")
 
