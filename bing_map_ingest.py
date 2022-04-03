@@ -143,17 +143,16 @@ def process_camera_routes(call_timestamp=getCurrentDateTime()):
     route_data.dropna(axis=0, subset=["dir_start", "dir_finish"], inplace=True)
     route_data.reset_index(drop=True, inplace=True)
 
-    loc_string_to_tuple = lambda s: tuple(re.findall("[^,\s]+", s))
+    loc_string_to_tuple = lambda s: tuple(float(c) for c in re.findall("[^,\s]+", s))
     route_data["cam_loc"] = route_data["cam_loc"].map(loc_string_to_tuple)
     route_data["dir_start"] = route_data["dir_start"].map(loc_string_to_tuple)
     route_data["dir_finish"] = route_data["dir_finish"].map(loc_string_to_tuple)
 
     print("Route dataframe:")
     print(route_data)
-    print(
-        "----------------------------------------------------------------------------------"
-    )
+    print("---------------------------------------------------------------------")
     congestion_frames = []
+    print(f"Calling Bing API for {route_data.shape[0]} routes at", getCurrentDateTime())
     for row in route_data.itertuples(index=False):
         congestion_frames.append(
             call_route_API(
@@ -167,11 +166,10 @@ def process_camera_routes(call_timestamp=getCurrentDateTime()):
         )
     congestion_data = pd.concat(congestion_frames, ignore_index=True)
     congestion_data = congestion_data.sort_values(["camera_id", "direction"])
+    print(f"Completed congestion data collection at", getCurrentDateTime())
     print("Congestion dataframe:")
     print(congestion_data)
-    print(
-        "----------------------------------------------------------------------------------"
-    )
+    print("---------------------------------------------------------------------")
     combined_data = pd.merge(
         congestion_data, route_data, on=["camera_id", "direction"], how="outer"
     )
