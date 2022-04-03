@@ -83,7 +83,11 @@ def call_route_API(
     extract_frame["call_timestamp"] = call_timestamp_str
 
     extract_filename = (
-        "congestion_level_" + str(extract_vals["camera_id"]) + "_" + call_timestamp_str
+        "congestion_level_"
+        + str(extract_vals["camera_id"])
+        + "_"
+        + call_timestamp_str
+        + ".csv"
     )
     if output_loc == "return":
         return extract_frame
@@ -119,7 +123,8 @@ def call_traffic_API(start_loc: tuple, finish_loc: tuple, incident_type: list = 
     pprint(resp_content)
 
 
-def process_camera_routes(call_timestamp=getCurrentDateTime()):
+def process_camera_routes(output_loc="local", call_timestamp=getCurrentDateTime()):
+    # TODO: check whether to save the location CSV in bucket or in local directory?
     dir_loc_df = pd.read_csv("camera_dir_locs.csv")
 
     common_cols = [c for c in dir_loc_df.columns if not c.startswith("dir")]
@@ -170,10 +175,23 @@ def process_camera_routes(call_timestamp=getCurrentDateTime()):
     print("Congestion dataframe:")
     print(congestion_data)
     print("---------------------------------------------------------------------")
-    combined_data = pd.merge(
+    combined_congestion_data = pd.merge(
         congestion_data, route_data, on=["camera_id", "direction"], how="outer"
     )
-    combined_data.to_csv("combined_congestion_data.csv")
+    if output_loc == "return":
+        return combined_congestion_data
+    else:
+        congestion_data_filename = (
+            "all-congestion-levels_" + formatted_timestamp(call_timestamp) + ".csv"
+        )
+        output_csv(
+            combined_congestion_data,
+            BING_DATA_DIR,
+            congestion_data_filename,
+            output_loc=output_loc,
+            s3_bucket=data_bucket,
+        )
+    # combined_congestion_data.to_csv("combined_congestion_data.csv")
 
 
 ### SAMPLE TESTS
@@ -214,4 +232,4 @@ test = {"start_loc": (1.329665, 103.842742), "finish_loc": (1.329716, 103.843949
 # print("Traffic Incident API call:")
 # call_traffic_API(test["start_loc"], test["finish_loc"])
 
-process_camera_routes()
+# process_camera_routes(output_loc="local")
