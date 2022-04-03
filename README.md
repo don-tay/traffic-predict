@@ -8,6 +8,7 @@ In this project, we aim to address the problem of road traffic congestion, with 
 
 - Python 3.8 or later
 - [Python3 venv](https://docs.python.org/3/library/venv.html) 
+- GNU Make (pre-installed in Linux/MacOS) - [Windows Installation](https://stackoverflow.com/questions/32127524/how-to-install-and-use-make-in-windows)
 
 ### First-time Setup
 
@@ -19,12 +20,20 @@ In this project, we aim to address the problem of road traffic congestion, with 
 Run script with Make
 
 ```bash
+### Linux/MacOS
+
 ### run task_schedule.py
 make run
 
 ### run custom python script (eg. image_ingest.py)
 make run APP=image_ingest.py
 
-### if running on Windows, overwrite venv path in cmds as follows:
-make run APP=image_ingest.py VENV=.venv/Scripts
+
+### Windows
+
+### run task_schedule.py
+make run VENV=.venv/Scripts PY=python
+
+### run custom python script (eg. image_ingest.py)
+make run APP=image_ingest.py VENV=.venv/Scripts PY=python
 ```

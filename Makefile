@@ -1,11 +1,12 @@
 VENV = .venv/bin
 APP = task_schedule.py
+PY = python3
 
 run: ./$(VENV)/activate
-	./$(VENV)/python3 $(APP)
+	./$(VENV)/$(PY) $(APP)
 
 $(VENV)/activate: requirements.txt
-	python3 -m venv .venv
+	$(PY) -m venv .venv
 	./$(VENV)/pip install -r requirements.txt
 
 clean:
