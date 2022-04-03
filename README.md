@@ -13,27 +13,18 @@ In this project, we aim to address the problem of road traffic congestion, with 
 
 1. Duplicate `.env.example` file and rename it `.env`
 2. In the `.env` file, fill in the values for the keys listed
-3. Initialize virtual environment: `python3 -m venv .venv`
 
 ## Run Script
 
-1. Download dependencies
+Run script with Make
 
 ```bash
-pip install -r requirements.txt
-```
+### run task_schedule.py
+make run
 
-2. Activate virtual environment
+### run custom python script (eg. image_ingest.py)
+make run APP=image_ingest.py
 
-```bash
-source .venv/bin/activate
-
-# Deactivate virtual env
-deactivate
-```
-
-3. Run script
-
-```bash
-python3 <path to script>
+### if running on Windows, overwrite venv path in cmds as follows:
+make run APP=image_ingest.py VENV=.venv/Scripts
 ```
