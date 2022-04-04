@@ -1,3 +1,4 @@
+import ast
 import os
 
 import pandas as pd
@@ -10,6 +11,7 @@ import re
 import boto3
 from dotenv import load_dotenv
 from helper import (
+    get_s3_objs,
     getCurrentDateTime,
     initBoto3Session,
     get_req_handler,
@@ -104,6 +106,7 @@ def call_route_API(
 
 def produce_route_table(output_loc="local"):
     # run this while keeping camera_dir_locs.csv in the same directory
+    # run this function once to store the route data in S3
     dir_loc_df = pd.read_csv("camera_dir_locs.csv")
 
     common_cols = [c for c in dir_loc_df.columns if not c.startswith("dir")]
@@ -146,15 +149,12 @@ def produce_route_table(output_loc="local"):
 
 
 def process_route_congestion(output_loc="local", call_timestamp=getCurrentDateTime()):
-    # temporary arrangement, should run produce_route_table() once with output_loc="AWS" before using this function.
-    route_data = produce_route_table(output_loc="return")
-    # # get route_data.csv from S3
-    # csv_obj = data_bucket.get_object(
-    #     Bucket=data_bucket.name, Key=BING_DATA_DIR + "route_data.csv"
-    # )
-    # csv_body = csv_obj["Body"]
-    # csv_string = csv_body.read().decode("utf-8")
-    # route_data = pd.read_csv(StringIO(csv_string))
+    # get route_data.csv from S3
+    s3_obj = get_s3_objs(data_bucket, BING_DATA_DIR + "route_data.csv")
+    csv_body = list(s3_obj.values())[0]
+    csv_string = csv_body.read().decode("utf-8")
+    route_data = pd.read_csv(StringIO(csv_string))
+    route_data = route_data.drop("Unnamed: 0", axis=1)
 
     congestion_frames = []
     print(f"Calling Bing API for {route_data.shape[0]} routes at", getCurrentDateTime())
@@ -162,10 +162,10 @@ def process_route_congestion(output_loc="local", call_timestamp=getCurrentDateTi
         # collect dataframe for each route
         congestion_frames.append(
             call_route_API(
-                row.camera_id,
-                row.direction,
-                row.dir_start,
-                row.dir_finish,
+                int(row.camera_id),
+                int(row.direction),
+                ast.literal_eval(row.dir_start),  # convert stringified tuple to tuple
+                ast.literal_eval(row.dir_finish),  # convert stringified tuple to tuple
                 call_timestamp=call_timestamp,
                 output_loc="return",
             )
@@ -173,9 +173,6 @@ def process_route_congestion(output_loc="local", call_timestamp=getCurrentDateTi
     congestion_data = pd.concat(congestion_frames, ignore_index=True)
     congestion_data = congestion_data.sort_values(["camera_id", "direction"])
     print(f"Completed congestion data collection at", getCurrentDateTime())
-    print("Congestion dataframe:")
-    print(congestion_data)
-    print("---------------------------------------------------------------------")
     combined_congestion_data = pd.merge(
         congestion_data, route_data, on=["camera_id", "direction"], how="outer"
     )
@@ -220,29 +217,12 @@ def call_traffic_API(start_loc: tuple, finish_loc: tuple, incident_type: list = 
 
 # using camera id 9703 & two arbitrary positions before and after the camera loc
 # this camera is just after SLE exit 11
-test_camera = {
-    "camera_id": 9703,
-    "cam_loc": (1.422857, 103.773003),
-    "before_cam_loc": (1.423695, 103.774169),
-    "after_cam_loc": (1.422049, 103.772065),
-}
-
-test_low_traffic = {
-    "start_loc": (1.329273, 103.852510),
-    "finish_loc": (1.329575, 103.849166),
-}
-
-test_heavy_traffic = {
-    "start_loc": (1.329998, 103.864056),
-    "finish_loc": (1.329206, 103.865908),
-}
-
-test_incident = {
-    "start_loc": (1.309039, 103.926214),
-    "finish_loc": (1.309709, 103.929513),
-}
-
-test = {"start_loc": (1.329665, 103.842742), "finish_loc": (1.329716, 103.843949)}
+# test_camera = {
+#     "camera_id": 9703,
+#     "cam_loc": (1.422857, 103.773003),
+#     "before_cam_loc": (1.423695, 103.774169),
+#     "after_cam_loc": (1.422049, 103.772065),
+# }
 
 
 # print("Route API call:")
@@ -252,6 +232,7 @@ test = {"start_loc": (1.329665, 103.842742), "finish_loc": (1.329716, 103.843949
 #     test_camera["after_cam_loc"],
 # )
 # print("Traffic Incident API call:")
-# call_traffic_API(test["start_loc"], test["finish_loc"])
+# call_traffic_API(test_camera["before_cam_loc"], test_camera["after_cam_loc"])
 
-# process_route_congestion(output_loc="local")
+# produce_route_table(output_loc="AWS") # call once if route_data.csv not in S3
+# process_route_congestion(output_loc="AWS")

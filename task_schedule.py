@@ -2,6 +2,7 @@ import schedule
 import time
 from weather_data import *
 from image_ingest import ingest_image
+from bing_map_ingest import process_route_congestion
 
 # synced ingestion of camera image and weather data
 # TODO: refactor output_loc to env vars
@@ -16,6 +17,11 @@ def ingest_all(output_loc="AWS"):
     forecast_weather_2HR(output_loc=output_loc, call_timestamp=call_timestamp)
     forecast_weather_24HR(output_loc=output_loc, call_timestamp=call_timestamp)
     forecast_weather_4DAY(output_loc=output_loc, call_timestamp=call_timestamp)
+
+    # collect congestion info at same time as image and forecast
+    # may present an issue: 179 calls per 5 mins = 51552 calls per day > 50000 call limit per 24 hr
+    # can try multiple API keys?
+    process_route_congestion(output_loc=output_loc, call_timestamp=call_timestamp)
 
 
 # TODO: determine suitable ingestion frequency (based on real-time data update frequency?) and merging frequency
