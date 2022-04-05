@@ -150,4 +150,4 @@ def merge_bucket_csvs(
 # Get localized current datetime
 def getCurrentDateTime():
     tz = pytz.timezone("Asia/Singapore")
-    return tz.localize(datetime.datetime.now())
+    return datetime.datetime.now().astimezone(tz=tz)
