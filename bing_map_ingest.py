@@ -4,7 +4,6 @@ import os
 import pandas as pd
 import json
 from io import StringIO
-import datetime
 from pprint import pprint
 import re
 
@@ -213,6 +212,20 @@ def call_traffic_API(start_loc: tuple, finish_loc: tuple, incident_type: list = 
     pprint(resp_content)
 
 
+def merge_bing_csvs():
+    table_names = [
+        "all-congestion-levels",
+    ]
+    for table in table_names:
+        print(f"Merging {table}...")
+        merge_bucket_csvs(
+            data_bucket,
+            BING_DATA_DIR,
+            table,
+            key_cols=None,
+        )
+
+
 ### SAMPLE TESTS
 
 # using camera id 9703 & two arbitrary positions before and after the camera loc
@@ -236,3 +249,4 @@ def call_traffic_API(start_loc: tuple, finish_loc: tuple, incident_type: list = 
 
 # produce_route_table(output_loc="AWS") # call once if route_data.csv not in S3
 # process_route_congestion(output_loc="AWS")
+# merge_bing_csvs()
