@@ -15,12 +15,12 @@ def ingest_all(output_loc="AWS"):
     forecast_weather_2HR(output_loc=output_loc, call_timestamp=call_timestamp)
     forecast_weather_24HR(output_loc=output_loc, call_timestamp=call_timestamp)
     forecast_weather_4DAY(output_loc=output_loc, call_timestamp=call_timestamp)
-    print("Completed weather data upload to S3 at", getCurrentDateTime())
-    # collect congestion info at same time as image and forecast
-    # may present an issue: 179 calls per 5 mins = 51552 calls per day > 50000 call limit per 24 hr
-    # can try multiple API keys?
-    # safer to reduce the call frequency (i.e., call this function separately every 10 mins instead?)
-    process_route_congestion(output_loc=output_loc, call_timestamp=call_timestamp)
+    print("Completed weather data collection at", getCurrentDateTime())
+    # call the bing API congestion function from 1 am to 11 pm only.
+    cong_start = datetime.time(hour=1, minute=0, second=0, microsecond=0)
+    cong_end = datetime.time(hour=23, minute=0, second=0, microsecond=0)
+    if cong_start <= call_timestamp.time() <= cong_end:
+        process_route_congestion(output_loc=output_loc, call_timestamp=call_timestamp)
 
 
 def merge_files():

@@ -227,26 +227,6 @@ def merge_bing_csvs():
 
 
 ### SAMPLE TESTS
-
-# using camera id 9703 & two arbitrary positions before and after the camera loc
-# this camera is just after SLE exit 11
-# test_camera = {
-#     "camera_id": 9703,
-#     "cam_loc": (1.422857, 103.773003),
-#     "before_cam_loc": (1.423695, 103.774169),
-#     "after_cam_loc": (1.422049, 103.772065),
-# }
-
-
-# print("Route API call:")
-# call_route_API(
-#     test_camera["camera_id"],
-#     test_camera["before_cam_loc"],
-#     test_camera["after_cam_loc"],
-# )
-# print("Traffic Incident API call:")
-# call_traffic_API(test_camera["before_cam_loc"], test_camera["after_cam_loc"])
-
 # produce_route_table(output_loc="AWS") # call once if route_data.csv not in S3
 # process_route_congestion(output_loc="AWS")
 # merge_bing_csvs()
