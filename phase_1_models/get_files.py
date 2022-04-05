@@ -38,7 +38,7 @@ def get_super_table():
     forecast_4d = get_csv("forecast-4DAY.csv", weather_dir)
     forecast_24h = get_csv("forecast-24HR.csv", weather_dir)
     forecast_2h = get_csv("forecast-2HR.csv", weather_dir)
-    bing_data = get_csv("all-congestion-levels_2022-04-05T004806.csv", bing_dir)
+    bing_data = get_csv("all-congestion-levels.csv", bing_dir)
     bing_key_table = get_csv("route_data.csv", bing_dir)
 
     # Process Rainfall Realtime 
@@ -123,8 +123,8 @@ def get_super_table():
     .intersection(set(non_rainfall_realtime.call_timestamp))\
     .intersection(set(forecast_4d.call_timestamp))\
     .intersection(set(forecast_24h.call_timestamp))\
-    .intersection(set(forecast_2h.call_timestamp))#\
-    #.intersection(set(bing_data.call_timestamp))
+    .intersection(set(forecast_2h.call_timestamp))\
+    .intersection(set(bing_data.call_timestamp))
 
     all_time = pd.DataFrame(all_time, columns = ["call_timestamp"])
     base_df = all_time.merge(cam_all, how = "cross") 
@@ -133,7 +133,6 @@ def get_super_table():
     df3 = df2.merge(forecast_2h, on = ["call_timestamp", "2hr_forecast_area"], how = "left")
     df4 = df3.merge(forecast_4d, on = ["call_timestamp"])
     df5 = df4.merge(forecast_24h, on = ["call_timestamp", "compass"])
-    #df6 = df5.merge(bing_data, on = ["call_timestamp", "cam_id", "direction"])
-    df6 = df5.merge(bing_data, on = ["cam_id", "direction"])
+    df6 = df5.merge(bing_data, on = ["call_timestamp", "cam_id", "direction"])
     
     return df6
