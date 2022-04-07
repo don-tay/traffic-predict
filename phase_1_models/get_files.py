@@ -64,9 +64,9 @@ def get_super_table():
     forecast_4d = forecast_4d.reset_index()
 
     # Processs 24h 
-    forecast_24h = forecast_24h.drop(["24hr_period_4_start", "24hr_period_4_end", "24hr_period_4_forecast_west", 
-                                     "24hr_period_4_forecast_east", "24hr_period_4_forecast_central", 
-                                     "24hr_period_4_forecast_south", "24hr_period_4_forecast_north"], axis = 1)
+    #forecast_24h = forecast_24h.drop(["24hr_period_4_start", "24hr_period_4_end", "24hr_period_4_forecast_west", 
+    #                                 "24hr_period_4_forecast_east", "24hr_period_4_forecast_central", 
+    #                                 "24hr_period_4_forecast_south", "24hr_period_4_forecast_north"], axis = 1)
 
     long_df1 = pd.melt(forecast_24h, id_vars = ["call_timestamp", "24hr_period_1_start", "24hr_period_1_end"],
             value_vars= ["24hr_period_1_forecast_west", 
