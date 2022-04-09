@@ -1,6 +1,7 @@
 import ast
 import os
 
+import numpy as np
 import pandas as pd
 import json
 from io import StringIO
@@ -58,7 +59,10 @@ def call_route_API(
     resp_content = json.loads(resp.content.decode("utf-8"))
 
     # for short route before and after the camera, there should be 1 resource
-    resource = resp_content["resourceSets"][0]["resources"][0]
+    try:
+        resource = resp_content["resourceSets"][0]["resources"][0]
+    except Exception:
+        resource = {}
 
     extract_vals = {
         "camera_id": [camera_id],
@@ -78,7 +82,7 @@ def call_route_API(
         try:
             v = itemgetter(f)(resource)
         except KeyError:
-            v = []
+            v = np.NaN
         extract_vals[f] = [v]
 
     extract_frame = pd.DataFrame(extract_vals)
