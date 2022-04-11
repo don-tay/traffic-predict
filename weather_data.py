@@ -34,7 +34,7 @@ WEATHER_API_URL = os.environ["WEATHER_API_URL"]
 
 
 def real_time_weather(
-    output_loc="local", call_timestamp=getCurrentDateTime(), log_jsons=False
+    output_loc="local", call_timestamp=getCurrentDateTime(), log_loc=None
 ):
     api_endpoints = {
         "air_temp": "air-temperature",  # 5 stations
@@ -53,13 +53,13 @@ def real_time_weather(
         resp = get_req_handler(target_url, params)
         resp_content = json.loads(resp.content.decode("utf-8"))
 
-        if log_jsons:
+        if log_loc:
             log_file = f"realtime-{weather_field}__{call_timestamp_str}"
             log_json(
                 resp_content,
                 WEATHER_DATA_DIR,
                 log_file,
-                output_loc=output_loc,
+                output_loc=log_loc,
                 s3_bucket=data_bucket,
             )
 
@@ -336,7 +336,7 @@ def merge_weather_csvs(drop_duplicates=False):
 
 # one-time calls, uncomment and run as needed
 
-# real_time_weather(output_loc="AWS", log_jsons=True)
+# real_time_weather(output_loc="AWS", log_loc="AWS")
 # forecast_weather_2HR(output_loc="AWS")
 # forecast_weather_24HR(output_loc="AWS")
 # forecast_weather_4DAY(output_loc="AWS")
