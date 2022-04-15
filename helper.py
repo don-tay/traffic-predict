@@ -1,3 +1,4 @@
+import json
 import boto3
 import os
 import pytz
@@ -151,3 +152,36 @@ def merge_bucket_csvs(
 def getCurrentDateTime():
     tz = pytz.timezone("Asia/Singapore")
     return datetime.datetime.now().astimezone(tz=tz)
+
+
+def log_json(
+    json_dict: dict,
+    log_dir: str,
+    filename: str,
+    output_loc: str = "AWS",
+    s3_bucket: Union[Bucket, None] = None,
+):
+    """
+    note: filename should exclude .json extension
+    """
+    savedir = log_dir + "json_logs/"
+    savepath = savedir + f"{filename}.json"
+    if output_loc == "local":
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        log_stream = open(savepath, "w+")
+        json.dump(json_dict, log_stream, allow_nan=True, indent=5)
+        log_stream.close()
+
+    elif output_loc == "AWS":
+        if not s3_bucket:
+            print(
+                "When using output='AWS', specify S3.Bucket object in s3_bucket.",
+                file=sys.stderr,
+            )
+            return
+        try:
+            # upload json object to S3 bucket
+            s3_bucket.put_object(Body=json.dumps(json_dict, allow_nan=True, indent=6), Key=savepath, ContentType="application/json")  # type: ignore
+        except Exception:
+            print("Failed to upload data in " + savepath, file=sys.stderr)

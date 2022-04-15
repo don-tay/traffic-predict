@@ -16,6 +16,7 @@ from helper import (
     initBoto3Session,
     get_req_handler,
     formatted_timestamp,
+    log_json,
     output_csv,
     merge_bucket_csvs,
 )
@@ -45,6 +46,7 @@ def call_route_API(
     finish_loc: tuple,
     call_timestamp=getCurrentDateTime(),
     output_loc="local",
+    log_loc=None,
 ):
     call_timestamp_str = formatted_timestamp(call_timestamp)
 
@@ -57,7 +59,15 @@ def call_route_API(
 
     resp = get_req_handler(BING_ROUTES_URL, route_call_params)
     resp_content = json.loads(resp.content.decode("utf-8"))
-
+    if log_loc:
+        log_file = f"{camera_id}-dir{direction}_" + call_timestamp_str
+        log_json(
+            resp_content,
+            BING_DATA_DIR,
+            log_file,
+            output_loc=log_loc,
+            s3_bucket=data_bucket,
+        )
     # for short route before and after the camera, there should be 1 resource
     try:
         resource = resp_content["resourceSets"][0]["resources"][0]
@@ -151,7 +161,9 @@ def produce_route_table(output_loc="local"):
         )
 
 
-def process_route_congestion(output_loc="local", call_timestamp=getCurrentDateTime()):
+def process_route_congestion(
+    output_loc="local", call_timestamp=getCurrentDateTime(), log_loc=None
+):
     # get route_data.csv from S3
     s3_obj = get_s3_objs(data_bucket, BING_DATA_DIR + "route_data.csv")
     csv_body = list(s3_obj.values())[0]
@@ -171,6 +183,7 @@ def process_route_congestion(output_loc="local", call_timestamp=getCurrentDateTi
                 ast.literal_eval(row.dir_finish),  # convert stringified tuple to tuple
                 call_timestamp=call_timestamp,
                 output_loc="return",
+                log_loc=log_loc,
             )
         )
     congestion_data = pd.concat(congestion_frames, ignore_index=True)
@@ -232,5 +245,5 @@ def merge_bing_csvs():
 
 ### SAMPLE TESTS
 # produce_route_table(output_loc="AWS") # call once if route_data.csv not in S3
-# process_route_congestion(output_loc="AWS")
+# process_route_congestion(output_loc="AWS", log_loc="AWS")
 # merge_bing_csvs()

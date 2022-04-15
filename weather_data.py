@@ -11,6 +11,7 @@ from helper import (
     initBoto3Session,
     get_req_handler,
     formatted_timestamp,
+    log_json,
     output_csv,
     merge_bucket_csvs,
 )
@@ -31,7 +32,9 @@ WEATHER_DATA_DIR = os.environ["WEATHER_DATA_DIR"]
 WEATHER_API_URL = os.environ["WEATHER_API_URL"]
 
 
-def real_time_weather(output_loc="local", call_timestamp=getCurrentDateTime()):
+def real_time_weather(
+    output_loc="local", call_timestamp=getCurrentDateTime(), log_loc=None
+):
     api_endpoints = {
         "air_temp": "air-temperature",  # 5 stations
         "rainfall": "rainfall",  # 68 stations
@@ -47,8 +50,18 @@ def real_time_weather(output_loc="local", call_timestamp=getCurrentDateTime()):
     for (weather_field, endpoint_url) in api_endpoints.items():
         target_url = WEATHER_API_URL + endpoint_url
         resp = get_req_handler(target_url, params)
-
         resp_content = json.loads(resp.content.decode("utf-8"))
+
+        if log_loc:
+            log_file = f"realtime-{weather_field}__{call_timestamp_str}"
+            log_json(
+                resp_content,
+                WEATHER_DATA_DIR,
+                log_file,
+                output_loc=log_loc,
+                s3_bucket=data_bucket,
+            )
+
         readings = resp_content["items"][0]["readings"]
         reading_dict = {weather_field + "_realtime": [], "station_id": []}
         for r in readings:
@@ -322,7 +335,7 @@ def merge_weather_csvs(drop_duplicates=False):
 
 # one-time calls, uncomment and run as needed
 
-# real_time_weather(output_loc="local")
+# real_time_weather(output_loc="AWS", log_loc="AWS")
 # forecast_weather_2HR(output_loc="AWS")
 # forecast_weather_24HR(output_loc="AWS")
 # forecast_weather_4DAY(output_loc="AWS")
