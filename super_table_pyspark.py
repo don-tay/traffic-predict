@@ -5,8 +5,6 @@ import re
 from helper import (
     get_req_handler,
     getCurrentDateTime,
-    initBoto3Session,
-    get_s3_objs,
     formatted_timestamp,
 )
 from csv_schemas import *
@@ -22,7 +20,6 @@ from math import sin, cos, sqrt, atan2, radians
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
-from pyspark.sql.types import *
 from pyspark.sql.window import Window
 
 
@@ -97,7 +94,11 @@ def get_df_from_csv(
         df = df.drop(drop_cols, axis=1)
     # convert to spark dataframe
     if as_spark:
-        df = spark.createDataFrame(df, schema=schema)
+        df = (
+            spark.createDataFrame(df, schema=schema)
+            if schema is not None
+            else spark.createDataFrame(df, samplingRatio=0.1)
+        )
         if num_partitions:
             df.repartition(numPartitions=num_partitions)
     return df
@@ -289,7 +290,7 @@ def proc_non_rainfall(call_timestamp=None):
     schema = schema_non_rainfall()
 
     # Process Non Rainfall Realtime
-    non_rainfall_realtime = get_df_from_csv(file_path, weather_dir, schema=schema)
+    non_rainfall_realtime = get_df_from_csv(file_path, weather_dir)
 
     non_rainfall_realtime = non_rainfall_realtime.withColumnRenamed(
         "RH%_realtime", "humidity_realtime"
@@ -449,7 +450,7 @@ def proc_bing(call_timestamp=None):
 
     bing_key_schema, bing_data_schema = schema_bing()
 
-    bing_data = get_df_from_csv(file_path, bing_dir, schema=bing_data_schema)
+    bing_data = get_df_from_csv(file_path, bing_dir)
 
     bing_key_table = get_df_from_csv("route_data.csv", bing_dir, schema=bing_key_schema)
     # Process Bing
@@ -539,7 +540,7 @@ def get_super_table(call_timestamp=None):
     # writing super table to a CSV locally for now
     # TODO: push table to redshift, also do so for the other smaller tables
     print("start write to CSV:", getCurrentDateTime())
-    df6.repartition(1).write.csv("sT.csv", header=True)
+    df6.repartition(1).write.csv("sT", header=True, mode="overwrite")
     print("end:", getCurrentDateTime())
     return df6
 
