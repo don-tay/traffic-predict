@@ -459,9 +459,9 @@ def proc_bing(call_timestamp=None):
 
     bing_key_schema, bing_data_schema = schema_bing()
 
-    bing_data = get_df_from_csv(file_path, bing_dir)
+    bing_data = get_df_from_csv(file_path, bing_dir, schema=bing_data_schema)
 
-    bing_key_table = get_df_from_csv("route_data.csv", bing_dir)
+    bing_key_table = get_df_from_csv("route_data.csv", bing_dir, schema=bing_key_schema)
     # Process Bing
     bing_key_table = bing_key_table.select("camera_id", "direction").withColumnRenamed(
         "camera_id", "cam_id"
