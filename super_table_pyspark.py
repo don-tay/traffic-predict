@@ -19,7 +19,7 @@ import json
 from math import sin, cos, sqrt, atan2, radians
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import *
+import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 
 
@@ -42,7 +42,11 @@ bing_dir = os.environ["BING_DATA_DIR"]
 
 # Spark Config
 spark = (
-    SparkSession.builder.master("local[*]")
+    # can vary number of cores used for local, and number of cores/memory for driver/executors
+    # see: https://stackoverflow.com/questions/32356143/what-does-setmaster-local-mean-in-spark
+    # and: https://stackoverflow.com/questions/24622108/apache-spark-the-number-of-cores-vs-the-number-of-executors
+    # using more cores can be slower due to data I/O
+    SparkSession.builder.master("local[4]")
     .config("spark.driver.cores", 8)
     .config("spark.driver.memory", "8g")
     .config("spark.executor.cores", 4)
@@ -81,7 +85,12 @@ def print_spark_df(df, show=False):
 
 
 def get_df_from_csv(
-    file_name, data_dir, drop_cols=None, as_spark=True, schema=None, num_partitions=None
+    file_name,
+    data_dir,
+    drop_cols=None,
+    as_spark=True,
+    schema=None,
+    num_partitions=None,
 ):
     # get streaming object from S3
     csv_obj = client.get_object(Bucket=bucket_name, Key=data_dir + file_name)
@@ -105,23 +114,23 @@ def get_df_from_csv(
 
 
 def spark_df_melt(df, id_vars, value_vars, var_name="variable", value_name="value"):
-    _vars_and_vals = array(
-        *(struct(lit(c).alias(var_name), col(c).alias(value_name)) for c in value_vars)
+    _vars_and_vals = F.array(
+        *(
+            F.struct(F.lit(c).alias(var_name), F.col(c).alias(value_name))
+            for c in value_vars
+        )
     )
 
-    tmp_df = df.withColumn("_vars_and_vals", explode(_vars_and_vals))
+    tmp_df = df.withColumn("_vars_and_vals", F.explode(_vars_and_vals))
     out_cols = id_vars + [
-        col("_vars_and_vals")[x].alias(x) for x in [var_name, value_name]
+        F.col("_vars_and_vals")[x].alias(x) for x in [var_name, value_name]
     ]
     return tmp_df.select(out_cols)
 
 
-def get_stations(file_name, data_dir):
-    csv_obj = client.get_object(Bucket=bucket_name, Key=data_dir + file_name)
-    body = csv_obj["Body"]
-    csv_string = body.read().decode("utf-8")
-    df = pd.read_csv(StringIO(csv_string))
-    df = df.drop("Unnamed: 0", axis=1)
+def get_stations(file_name, data_dir, **kwargs):
+    # kwargs to be used in get_df_from_csv
+    df = get_df_from_csv(file_name, data_dir, **kwargs)
     df = df[["station_id", "station_loc"]].drop_duplicates()
     return df
 
@@ -145,8 +154,10 @@ def get_camera_loc():
 
 
 def camera_to_loc_mapping():
-    rainfall = get_stations("rainfall-realtime.csv", weather_dir)
-    non_rainfall = get_stations("non-rainfall-realtime.csv", weather_dir)
+    rainfall = get_stations("rainfall-realtime.csv", weather_dir, as_spark=False)
+    non_rainfall = get_stations(
+        "non-rainfall-realtime.csv", weather_dir, as_spark=False
+    )
 
     keep = ["S24", "S107"]  # need to manual inspect and change
     non_rainfall = non_rainfall[non_rainfall.station_id.isin(keep)]
@@ -274,7 +285,7 @@ def proc_rainfall(call_timestamp=None):
 
     schema = schema_rainfall()
     # Process Rainfall Realtime
-    rainfall_realtime = get_df_from_csv(file_path, weather_dir, schema=schema)
+    rainfall_realtime = get_df_from_csv(file_path, weather_dir)
     rainfall_realtime = rainfall_realtime.select(
         ["call_timestamp", "station_id", "rainfall_realtime"]
     ).withColumnRenamed("station_id", "rainfall_station_id")
@@ -317,13 +328,13 @@ def proc_forecast_4DAY(call_timestamp=None):
     # Process 4 day Forecast
 
     schema = schema_forecast_4DAY()
-    forecast_4d = get_df_from_csv(file_path, weather_dir, schema=None)
-    forecast_4d = forecast_4d.withColumn("4day_date", to_date("4day_date"))
+    forecast_4d = get_df_from_csv(file_path, weather_dir)
+    forecast_4d = forecast_4d.withColumn("4day_date", F.to_date("4day_date"))
 
     # produce row numbers for each date forecasted for each timestamp
     forecast_4d = forecast_4d.sort("4day_date").withColumn(
         "grp_row_num",
-        row_number().over(
+        F.row_number().over(
             Window.partitionBy(["4day_update_timestamp", "call_timestamp"]).orderBy(
                 "4day_date"
             )
@@ -375,9 +386,7 @@ def proc_forecast_24HR(call_timestamp=None):
 
     schema = schema_forecast_24HR()
 
-    forecast_24h = get_df_from_csv(
-        file_path, weather_dir, drop_cols=pre_drop_cols, schema=None
-    )
+    forecast_24h = get_df_from_csv(file_path, weather_dir, drop_cols=pre_drop_cols)
     # Process 24h
     long_df_dict = {}
     overlap_cols = []
@@ -397,9 +406,9 @@ def proc_forecast_24HR(call_timestamp=None):
                 f"24hr_period_{p}_forecast_north",
             ],
         )
-        long_df = long_df.withColumn("split_arr", split(long_df.variable, "_")).select(
-            "*", element_at(col("split_arr"), -1).alias("compass")
-        )
+        long_df = long_df.withColumn(
+            "split_arr", F.split(long_df.variable, "_")
+        ).select("*", F.element_at(F.col("split_arr"), -1).alias("compass"))
         long_df = long_df.drop("split_arr", "variable").withColumnRenamed(
             "value", f"24hr_period_{p}"
         )
@@ -436,7 +445,7 @@ def proc_forecast_2HR(call_timestamp=None):
     file_path += ".csv"
 
     schema = schema_forecast_2HR()
-    forecast_2h = get_df_from_csv("forecast-2HR.csv", weather_dir, schema=schema)
+    forecast_2h = get_df_from_csv("forecast-2HR.csv", weather_dir)
     # Process 2h
     forecast_2h = forecast_2h.drop("2hr_forecast_area_loc", "2hr_start", "2hr_end")
     return forecast_2h
@@ -452,7 +461,7 @@ def proc_bing(call_timestamp=None):
 
     bing_data = get_df_from_csv(file_path, bing_dir)
 
-    bing_key_table = get_df_from_csv("route_data.csv", bing_dir, schema=bing_key_schema)
+    bing_key_table = get_df_from_csv("route_data.csv", bing_dir)
     # Process Bing
     bing_key_table = bing_key_table.select("camera_id", "direction").withColumnRenamed(
         "camera_id", "cam_id"
