@@ -3,6 +3,7 @@
 
 # Tmp dir
 cam-img/
+sT/
 
 # OS
 .DS_Store
