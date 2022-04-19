@@ -4,6 +4,10 @@ from conn import create_db_conn
 conn = create_db_conn()
 cursor = conn.cursor()
 
+# ! NB: convention for tbl and col names in DB
+# 1. lowercase
+# 2. snake case
+# 3. start names with alphabets
 cursor.execute(
     """
     CREATE TABLE traffic_weather_comb (
@@ -17,7 +21,7 @@ cursor.execute(
     rainfall_station_id varchar,
     rainfall_realtime float,
     wind_speed_realtime float,
-    wind_dir_realtime int,
+    wind_dir_realtime float,
     humidity_realtime float,
     air_temp_realtime float,
     two_hr_forecast_value varchar,
@@ -72,7 +76,7 @@ cursor.execute(
     twenty_four_hr_period_3_start varchar,
     twenty_four_hr_period_3_end varchar,
     twenty_four_hr_period_3 varchar,
-    trafficCongestion varchar,
+    trafficcongestion varchar,
     created_on timestamp default NOW()
     )
   """

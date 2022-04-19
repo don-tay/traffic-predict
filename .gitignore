@@ -4,6 +4,7 @@
 # Tmp dir
 cam-img/
 sT/
+sT.csv
 
 # OS
 .DS_Store
