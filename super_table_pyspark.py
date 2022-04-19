@@ -1,5 +1,6 @@
 from pprint import pprint
 import re
+from db.super_tbl import copy_csv_to_db
 
 
 from helper import (
@@ -548,9 +549,18 @@ def get_super_table(call_timestamp=None):
 
     # writing super table to a CSV locally for now
     # TODO: push table to redshift, also do so for the other smaller tables
-    print("start write to CSV:", getCurrentDateTime())
-    df6.repartition(1).write.csv("sT", header=True, mode="overwrite")
-    print("end:", getCurrentDateTime())
+    print("start copy to DB:", getCurrentDateTime())
+    pd_df6 = df6.toPandas()
+    if isinstance(pd_df6, pd.DataFrame):
+        # use pd DF to_csv method to write to single csv sT.csv (csv has no header to allow easy insertion into db)
+        file_path = "sT.csv"
+        pd_df6.to_csv(file_path, index=False, header=False)
+        with open(file_path) as f:
+            copy_csv_to_db(f)
+        print("end:", getCurrentDateTime())
+    else:
+        # use spark API to write into dir sT/
+        df6.repartition(1).write.csv("sT", header=True, mode="overwrite")
     return df6
 
 
