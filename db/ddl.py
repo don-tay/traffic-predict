@@ -75,7 +75,8 @@ cursor.execute(
     twenty_four_hr_period_3_start varchar,
     twenty_four_hr_period_3_end varchar,
     twenty_four_hr_period_3 varchar,
-    trafficcongestion varchar
+    trafficcongestion varchar,
+    PRIMARY KEY(call_timestamp,cam_id,direction)
     )
   """
 )

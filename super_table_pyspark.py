@@ -501,13 +501,8 @@ def get_super_table(
     call_timestamp=None,
     push_to_DB="spark",
     dest_table="traffic_weather_comb",
-    write_mode="append",
+    write_content="today",
 ):
-    # if write mode specified as append (default), then only append the rows from today to the DB
-    # otherwise, overwrite the DB with all rows in the source CSVs (can use overwrite mode to benchmark spark performance)
-    assert (
-        write_mode == "append" or write_mode == "overwrite"
-    ), "write_mode should be one of 'append', 'overwrite'"
 
     # Camera to locations -
     # TODO: perhaps run mapping function one time & pull from S3 instead
@@ -564,10 +559,17 @@ def get_super_table(
         .intersect(bing_data.select("call_timestamp"))
         .distinct()
     )
-    if write_mode == "append":
-        print("Writing rows for the date:", datetime.today)
+    if write_content == "today":
+        print("Writing rows for the date:", datetime.today().strftime("%d/%m/%Y"))
         all_time = all_time.filter(
             F.to_date(F.col("call_timestamp")).eqNullSafe(F.current_date())
+        )
+    elif write_content == "before_today":
+        print(
+            "Writing rows for the dates before:", datetime.today().strftime("%d/%m/%Y")
+        )
+        all_time = all_time.filter(
+            F.to_date(F.col("call_timestamp")).__lt__(F.current_date())
         )
 
     base_df = all_time.join(cam_all, how="cross")
@@ -589,8 +591,6 @@ def get_super_table(
         "call_timestamp"
     )
 
-    # writing super table to a CSV locally for now
-    # TODO: push table to redshift, also do so for the other smaller tables
     print(f"start copy to DB using {push_to_DB}:", getCurrentDateTime())
     if push_to_DB == "pandas":
         pd_df6 = df6.toPandas()
@@ -602,15 +602,18 @@ def get_super_table(
                 copy_csv_to_db(f)
             print("end:", getCurrentDateTime())
     elif push_to_DB == "spark":
-        spark_df_to_db(df6, table_name=dest_table, write_mode=write_mode)
+        spark_df_to_db(df6, table_name=dest_table, write_mode="append")
         print(f"write to Redshift DB Table {dest_table} done at:", getCurrentDateTime())
-
+    else:
         # use spark API to write into dir sT/
-        df6.repartition(1).write.csv("sT", header=True, mode=write_mode)
+        df6.repartition(1).write.csv("sT", header=True, mode="append")
         print("write to local csv done at:", getCurrentDateTime())
     return df6
 
 
+# sT = get_super_table(
+#     push_to_DB="spark", dest_table="traffic_weather_comb", write_content="before_today"
+# )
 sT = get_super_table(
-    push_to_DB="spark", dest_table="traffic_weather_comb_spark", write_mode="append"
+    push_to_DB="spark", dest_table="traffic_weather_comb", write_content="today"
 )
