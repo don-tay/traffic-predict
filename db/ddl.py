@@ -11,7 +11,6 @@ cursor = conn.cursor()
 cursor.execute(
     """
     CREATE TABLE traffic_weather_comb (
-    id SERIAL PRIMARY KEY,
     call_timestamp varchar,
     cam_id int,
     direction int,
@@ -76,8 +75,7 @@ cursor.execute(
     twenty_four_hr_period_3_start varchar,
     twenty_four_hr_period_3_end varchar,
     twenty_four_hr_period_3 varchar,
-    trafficcongestion varchar,
-    created_on timestamp default NOW()
+    trafficcongestion varchar
     )
   """
 )

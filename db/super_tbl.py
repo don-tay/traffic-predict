@@ -1,12 +1,32 @@
+import os
 import io
 from typing import Union
+
+import pyspark.sql
 
 from db.conn import create_db_conn
 
 TBL_NAME = "traffic_weather_comb"
 
+
+def spark_df_to_db(
+    spark_df: pyspark.sql.DataFrame,
+    table_name: str = TBL_NAME,
+    write_mode: str = "append",
+) -> None:
+    db_host = "jdbc:postgresql://" + os.environ["DB_HOST"] + "/" + os.environ["DB_NAME"]
+    db_conn_cred = {
+        "user": os.environ["DB_USER"],
+        "password": os.environ["DB_PASS"],
+        "driver": "org.postgresql.Driver",  # needed to allow spark to write to postgres db
+    }
+    spark_df.write.jdbc(db_host, table_name, mode=write_mode, properties=db_conn_cred)
+
+
 # copy csv (w/o header) of super table into db
-def copy_csv_to_db(file: Union[io.StringIO, io.TextIOWrapper]) -> None:
+def copy_csv_to_db(
+    file: Union[io.StringIO, io.TextIOWrapper], table_name: str = TBL_NAME
+) -> None:
     conn = create_db_conn()
     cur = conn.cursor()
     insert_cols = (
