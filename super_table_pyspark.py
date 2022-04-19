@@ -1,6 +1,7 @@
+from datetime import datetime
 from pprint import pprint
 import re
-from db.super_tbl import copy_csv_to_db
+from db.super_tbl import copy_csv_to_db, spark_df_to_db
 
 
 from helper import (
@@ -42,12 +43,15 @@ weather_dir = os.environ["WEATHER_DATA_DIR"]
 bing_dir = os.environ["BING_DATA_DIR"]
 
 # Spark Config
+# can vary number of cores used for local, and number of cores/memory for driver/executors, see:
+# https://stackoverflow.com/questions/32356143/what-does-setmaster-local-mean-in-spark
+# https://stackoverflow.com/questions/24622108/apache-spark-the-number-of-cores-vs-the-number-of-executors
+# https://stackoverflow.com/questions/63387253/pyspark-setting-executors-cores-and-memory-local-machine
+# using more cores may be slower due to data I/O
 spark = (
-    # can vary number of cores used for local, and number of cores/memory for driver/executors
-    # see: https://stackoverflow.com/questions/32356143/what-does-setmaster-local-mean-in-spark
-    # and: https://stackoverflow.com/questions/24622108/apache-spark-the-number-of-cores-vs-the-number-of-executors
-    # using more cores can be slower due to data I/O
     SparkSession.builder.master("local[4]")
+    # JDBC to postgres requires driver from https://mvnrepository.com/artifact/org.postgresql/postgresql/42.3.3
+    .config("spark.jars.packages", "org.postgresql:postgresql:42.3.3")
     .config("spark.driver.cores", 8)
     .config("spark.driver.memory", "8g")
     .config("spark.executor.cores", 4)
@@ -367,6 +371,11 @@ def proc_forecast_4DAY(call_timestamp=None):
         "4day_update_timestamp_4",
     ]
     forecast_4d = forecast_4d.drop(*drop_cols)
+
+    # rename columns to start with alphabets
+    forecast_4d = forecast_4d.toDF(
+        *["four_" + c[1:] if c.startswith("4") else c for c in forecast_4d.columns]
+    )
     return forecast_4d
 
 
@@ -435,7 +444,13 @@ def proc_forecast_24HR(call_timestamp=None):
         .join(long_df_dict[2], how="inner", on=["call_timestamp", "compass"])
         .join(long_df_dict[3], how="inner", on=["call_timestamp", "compass"])
     )
-
+    # rename columns to start with alphabets
+    forecast_24h = forecast_24h.toDF(
+        *[
+            "twenty_four_" + c[2:] if c.startswith("24") else c
+            for c in forecast_24h.columns
+        ]
+    )
     return forecast_24h
 
 
@@ -449,6 +464,10 @@ def proc_forecast_2HR(call_timestamp=None):
     forecast_2h = get_df_from_csv("forecast-2HR.csv", weather_dir)
     # Process 2h
     forecast_2h = forecast_2h.drop("2hr_forecast_area_loc", "2hr_start", "2hr_end")
+    # rename columns to start with alphabets
+    forecast_2h = forecast_2h.toDF(
+        *["two_" + c[1:] if c.startswith("2") else c for c in forecast_2h.columns]
+    )
     return forecast_2h
 
 
@@ -467,14 +486,23 @@ def proc_bing(call_timestamp=None):
     bing_key_table = bing_key_table.select("camera_id", "direction").withColumnRenamed(
         "camera_id", "cam_id"
     )
-    bing_data = bing_data.select(
-        "camera_id", "direction", "call_timestamp", "trafficCongestion"
-    ).withColumnRenamed("camera_id", "cam_id")
+    bing_data = (
+        bing_data.select(
+            "camera_id", "direction", "call_timestamp", "trafficCongestion"
+        )
+        .withColumnRenamed("camera_id", "cam_id")
+        .withColumnRenamed("trafficCongestion", "trafficcongestion")
+    )
 
     return bing_key_table, bing_data
 
 
-def get_super_table(call_timestamp=None):
+def get_super_table(
+    call_timestamp=None,
+    push_to_DB="spark",
+    dest_table="traffic_weather_comb",
+    write_content="today",
+):
 
     # Camera to locations -
     # TODO: perhaps run mapping function one time & pull from S3 instead
@@ -484,7 +512,7 @@ def get_super_table(call_timestamp=None):
     cam_to_loc = (
         cam_to_loc.withColumnRenamed("rainfall", "rainfall_station_id")
         .withColumnRenamed("not_rainfall", "non_rainfall_station_id")
-        .withColumnRenamed("region", "2hr_forecast_area")
+        .withColumnRenamed("region", "two_hr_forecast_area")
     )
 
     print("Camera-Station Mapping DF:")
@@ -531,6 +559,18 @@ def get_super_table(call_timestamp=None):
         .intersect(bing_data.select("call_timestamp"))
         .distinct()
     )
+    if write_content == "today":
+        print("Writing rows for the date:", datetime.today().strftime("%d/%m/%Y"))
+        all_time = all_time.filter(
+            F.to_date(F.col("call_timestamp")).eqNullSafe(F.current_date())
+        )
+    elif write_content == "before_today":
+        print(
+            "Writing rows for the dates before:", datetime.today().strftime("%d/%m/%Y")
+        )
+        all_time = all_time.filter(
+            F.to_date(F.col("call_timestamp")).__lt__(F.current_date())
+        )
 
     base_df = all_time.join(cam_all, how="cross")
 
@@ -542,26 +582,38 @@ def get_super_table(call_timestamp=None):
         on=["call_timestamp", "non_rainfall_station_id"],
         how="left",
     )
-    df3 = df2.join(forecast_2h, on=["call_timestamp", "2hr_forecast_area"], how="left")
+    df3 = df2.join(
+        forecast_2h, on=["call_timestamp", "two_hr_forecast_area"], how="left"
+    )
     df4 = df3.join(forecast_4d, on=["call_timestamp"])
     df5 = df4.join(forecast_24h, on=["call_timestamp", "compass"])
-    df6 = df5.join(bing_data, on=["call_timestamp", "cam_id", "direction"])
+    df6 = df5.join(bing_data, on=["call_timestamp", "cam_id", "direction"]).sort(
+        "call_timestamp"
+    )
 
-    # writing super table to a CSV locally for now
-    # TODO: push table to redshift, also do so for the other smaller tables
-    print("start copy to DB:", getCurrentDateTime())
-    pd_df6 = df6.toPandas()
-    if isinstance(pd_df6, pd.DataFrame):
-        # use pd DF to_csv method to write to single csv sT.csv (csv has no header to allow easy insertion into db)
-        file_path = "sT.csv"
-        pd_df6.to_csv(file_path, index=False, header=False)
-        with open(file_path) as f:
-            copy_csv_to_db(f)
-        print("end:", getCurrentDateTime())
+    print(f"start copy to DB using {push_to_DB}:", getCurrentDateTime())
+    if push_to_DB == "pandas":
+        pd_df6 = df6.toPandas()
+        if isinstance(pd_df6, pd.DataFrame):
+            # use pd DF to_csv method to write to single csv sT.csv (csv has no header to allow easy insertion into db)
+            file_path = "sT.csv"
+            pd_df6.to_csv(file_path, index=False, header=False)
+            with open(file_path) as f:
+                copy_csv_to_db(f)
+            print("end:", getCurrentDateTime())
+    elif push_to_DB == "spark":
+        spark_df_to_db(df6, table_name=dest_table, write_mode="append")
+        print(f"write to Redshift DB Table {dest_table} done at:", getCurrentDateTime())
     else:
         # use spark API to write into dir sT/
-        df6.repartition(1).write.csv("sT", header=True, mode="overwrite")
+        df6.repartition(1).write.csv("sT", header=True, mode="append")
+        print("write to local csv done at:", getCurrentDateTime())
     return df6
 
 
-sT = get_super_table()
+# sT = get_super_table(
+#     push_to_DB="spark", dest_table="traffic_weather_comb", write_content="before_today"
+# )
+sT = get_super_table(
+    push_to_DB="spark", dest_table="traffic_weather_comb", write_content="today"
+)
