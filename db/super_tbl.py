@@ -96,6 +96,6 @@ def copy_csv_to_db(
         "twenty_four_hr_period_3",
         "trafficcongestion",
     )
-    cur.copy_from(file, TBL_NAME, sep=",", null="", columns=insert_cols)
+    cur.copy_from(file, table_name, sep=",", null="", columns=insert_cols)
     cur.close()
     conn.close()
