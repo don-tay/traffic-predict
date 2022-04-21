@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from pprint import pprint
 import re
+from typing import Union
 from db.super_tbl import copy_csv_to_db, spark_df_to_db
 
 
@@ -564,6 +565,16 @@ def get_super_table(
         all_time = all_time.filter(
             F.to_date(F.col("call_timestamp")).eqNullSafe(F.current_date())
         )
+    elif write_content == "yesterday":
+        print(
+            "Writing rows for the date:",
+            (datetime.today() - timedelta(days=1)).strftime("%d/%m/%Y"),
+        )
+        all_time = all_time.filter(
+            F.to_date(F.col("call_timestamp")).eqNullSafe(
+                F.date_sub(F.current_date(), 1)
+            )
+        )
     elif write_content == "before_today":
         print(
             "Writing rows for the dates before:", datetime.today().strftime("%d/%m/%Y")
@@ -571,6 +582,10 @@ def get_super_table(
         all_time = all_time.filter(
             F.to_date(F.col("call_timestamp")).__lt__(F.current_date())
         )
+    elif write_content == "latest":
+        latest_ts = all_time.agg({"call_timestamp": "max"}).collect()[0][0]
+        print("Writing rows for the call_timestamp:", latest_ts)
+        all_time = all_time.filter(F.col("call_timestamp").eqNullSafe(latest_ts))
 
     base_df = all_time.join(cam_all, how="cross")
 
@@ -612,8 +627,18 @@ def get_super_table(
 
 
 # sT = get_super_table(
-#     push_to_DB="spark", dest_table="traffic_weather_comb", write_content="before_today"
+#     push_to_DB="spark",
+#     dest_table="traffic_weather_comb",
+#     write_content="before_today",
 # )
 sT = get_super_table(
     push_to_DB="spark", dest_table="traffic_weather_comb", write_content="today"
 )
+# sT = get_super_table(
+#     push_to_DB="spark",
+#     dest_table="traffic_weather_comb_daily",
+#     write_content="yesterday",
+# )
+# sT = get_super_table(
+#     push_to_DB="spark", dest_table="traffic_weather_comb_daily", write_content="latest"
+# )
