@@ -1,0 +1,88 @@
+Unnamed: 0,cam_id,not_rainfall,rainfall,region,compass
+1,1001,S108,S119,Kallang,south
+2,1002,S108,S215,Geylang,east
+3,1003,S108,S123,Kallang,central
+4,1004,S108,S215,Kallang,central
+5,1005,S107,S221,Paya Lebar,east
+6,1006,S107,S221,Paya Lebar,east
+7,1501,S108,S108,City,south
+8,1502,S108,S108,City,south
+9,1503,S108,S108,City,south
+10,1504,S108,S214,Kallang,south
+11,1505,S108,S108,City,south
+12,1701,S108,S123,Toa Payoh,central
+13,1702,S108,S36,Toa Payoh,central
+14,1703,S108,S123,Toa Payoh,central
+15,1704,S108,S222,City,south
+16,1705,S108,S109,Serangoon,central
+17,1706,S108,S109,Ang Mo Kio,central
+18,1707,S108,S222,Bukit Merah,south
+19,1709,S108,S111,Novena,south
+20,1711,S108,S217,Toa Payoh,central
+21,2701,S44,S210,Woodlands,north
+22,2702,S44,S210,Woodlands,north
+23,2703,S108,S50,Bukit Timah,central
+24,2704,S44,S210,Sungei Kadut,north
+25,2705,S44,S69,Bukit Panjang,central
+26,2706,S44,S211,Sungei Kadut,north
+27,2707,S44,S40,Sungei Kadut,north
+28,2708,S44,S40,Bukit Panjang,north
+29,3702,S24,S224,Changi,east
+30,3704,S108,S214,Marine Parade,south
+31,3705,S107,S207,Changi,east
+32,3793,S107,S212,Bedok,east
+33,3795,S108,S113,Marine Parade,east
+34,3796,S108,S78,Marine Parade,east
+35,3797,S108,S214,Marine Parade,south
+36,3798,S108,S119,Kallang,south
+37,4701,S108,S223,Queenstown,south
+38,4702,S108,S222,Bukit Merah,south
+39,4703,S44,S82,Pioneer,west
+40,4704,S108,S222,Bukit Merah,south
+41,4705,S44,S35,Jurong East,west
+42,4706,S108,S71,Queenstown,south
+43,4707,S44,S89,Pioneer,west
+44,4708,S108,S71,Queenstown,south
+45,4709,S44,S202,Clementi,west
+46,4710,S44,S35,Clementi,west
+47,4712,S44,S82,Pioneer,west
+48,4713,S44,S82,Pioneer,west
+49,4714,S44,S202,Clementi,west
+50,4716,S44,S89,Pioneer,west
+51,4798,S108,S226,Sentosa,south
+52,4799,S108,S226,Sentosa,south
+53,5794,S107,S212,Bedok,east
+54,5795,S108,S215,Geylang,east
+55,5797,S108,S215,Geylang,east
+56,5798,S108,S215,Geylang,central
+57,5799,S108,S36,Toa Payoh,central
+58,6701,S108,S123,Toa Payoh,central
+59,6703,S108,S88,Novena,central
+60,6704,S108,S90,Novena,central
+61,6705,S108,S213,Novena,central
+62,6706,S108,S69,Bukit Timah,central
+63,6708,S44,S44,Jalan Bahar,west
+64,6710,S44,S50,Bukit Timah,central
+65,6711,S107,S224,Changi,east
+66,6712,S44,S50,Clementi,central
+67,6713,S107,S84,Tampines,east
+68,6714,S44,S228,Jalan Bahar,west
+69,6715,S44,S229,Jurong West,west
+70,6716,S44,S89,Pioneer,west
+71,7791,S24,S94,Tampines,east
+72,7793,S24,S205,Pasir Ris,east
+73,7794,S106,S205,Paya Lebar,east
+74,7795,S106,S205,Punggol,east
+75,7796,S106,S81,Punggol,east
+76,7797,S106,S900,Yishun,north
+77,7798,S106,S900,Ang Mo Kio,north
+78,8701,S44,S114,Choa Chu Kang,west
+79,8702,S44,S40,Bukit Panjang,north
+80,8704,S44,S114,Choa Chu Kang,west
+81,8706,S44,S121,Jalan Bahar,west
+82,9701,S108,S109,Ang Mo Kio,north
+83,9702,S108,S08,Central Water Catchment,north
+84,9703,S44,S211,Sungei Kadut,north
+85,9704,S44,S40,Mandai,north
+86,9705,S44,S104,Mandai,north
+87,9706,S44,S40,Mandai,north
