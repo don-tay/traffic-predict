@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from pprint import pprint
 import re
 from typing import Union
-from db.super_tbl import copy_csv_to_db, spark_df_to_db
+from db.super_tbl import copy_csv_to_db, spark_df_to_db, read_from_db
 
 
 from helper import (
@@ -611,7 +611,7 @@ def get_super_table(
             file_path = "sT.csv"
             pd_df6.to_csv(file_path, index=False, header=False)
             with open(file_path) as f:
-                copy_csv_to_db(f)
+                copy_csv_to_db(f, table_name=dest_table)
             print("end:", getCurrentDateTime())
     elif push_to_DB == "spark":
         spark_df_to_db(df6, table_name=dest_table, write_mode="append")

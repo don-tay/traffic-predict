@@ -2,24 +2,43 @@ import os
 import io
 from typing import Union
 
-import pyspark.sql
-
+from pyspark.sql import DataFrame, SparkSession
 from db.conn import create_db_conn
 
 TBL_NAME = "traffic_weather_comb"
 
 
-def spark_df_to_db(
-    spark_df: pyspark.sql.DataFrame,
-    table_name: str = TBL_NAME,
-    write_mode: str = "append",
-) -> None:
+def spark_db_conn_params():
     db_host = "jdbc:postgresql://" + os.environ["DB_HOST"] + "/" + os.environ["DB_NAME"]
     db_conn_cred = {
         "user": os.environ["DB_USER"],
         "password": os.environ["DB_PASS"],
         "driver": "org.postgresql.Driver",  # needed to allow spark to write to postgres db
     }
+    return db_host, db_conn_cred
+
+
+def read_spark_df_from_db(
+    spark_session: SparkSession, table_name: str = TBL_NAME, num_partitions: int = 1
+) -> DataFrame:
+
+    db_host, db_conn_cred = spark_db_conn_params()
+
+    spark_df = spark_session.read.jdbc(
+        url=db_host,
+        table=table_name,
+        numPartitions=num_partitions,
+        properties=db_conn_cred,
+    )
+    return spark_df
+
+
+def spark_df_to_db(
+    spark_df: DataFrame,
+    table_name: str = TBL_NAME,
+    write_mode: str = "append",
+) -> None:
+    db_host, db_conn_cred = spark_db_conn_params()
     spark_df.write.jdbc(db_host, table_name, mode=write_mode, properties=db_conn_cred)
 
 
