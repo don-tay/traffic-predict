@@ -504,10 +504,7 @@ def get_super_table(
     dest_table="traffic_weather_comb",
     write_content="today",
 ):
-
     # Camera to locations -
-    # TODO: perhaps run mapping function one time & pull from S3 instead
-    # alternatively save that file in the server EC2 machine
     # cam_to_loc = camera_to_loc_mapping()
     cam_to_loc = get_df_from_csv("camera_station_mapping.csv", "")
     cam_to_loc = (
