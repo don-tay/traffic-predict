@@ -5,7 +5,6 @@ from image_ingest import ingest_image
 from bing_map_ingest import merge_bing_csvs, process_route_congestion
 
 # synced ingestion of camera image and weather data
-# TODO: refactor output_loc to env vars
 def ingest_all(output_loc="AWS"):
     call_timestamp = getCurrentDateTime()
     print("Calling all data endpoints with date_time parameter:", call_timestamp)
@@ -24,7 +23,6 @@ def merge_files():
     merge_bing_csvs()
 
 
-# TODO: determine suitable ingestion frequency (based on real-time data update frequency?) and merging frequency
 INGEST_SCHEDULE_FREQ = 5  # minutes
 schedule.every(INGEST_SCHEDULE_FREQ).minutes.do(ingest_all)
 print(f"Init scheduler to run ingest job every {INGEST_SCHEDULE_FREQ} minutes")
